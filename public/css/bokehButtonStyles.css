@@ -1,0 +1,43 @@
+.bokeh-button {
+  background-color: #ffffff; /* White base */
+  color: #000000; /* Black text */
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  font-family: 'Arial', sans-serif; /* Clean, modern font */
+  text-transform: uppercase; /* Stylistic choice */
+  letter-spacing: 1px; /* Spacing for better readability */
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bokeh-button:hover {
+  background-color: #e0e0e0; /* Light gray for hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  cursor: pointer;
+}
+
+.bokeh-button:focus, .bokeh-button:active {
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.bokeh-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+
+.bokeh-button:hover::after {
+  opacity: 1;
+}

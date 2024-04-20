@@ -1,0 +1,64 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.btn-danger');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const formTitle = this.getAttribute('data-form-title'); // Assuming each delete button has a data attribute for the form title
+
+            // Fix for the modal blink issue: Ensure only one modal is triggered at a time
+            // by using Bootstrap's modal methods instead of the confirm dialog
+            const modalId = this.getAttribute('data-bs-target'); // Get the target modal ID from the button's data attribute
+            const modalElement = document.querySelector(modalId);
+            if (modalElement) {
+                const modalInstance = new bootstrap.Modal(modalElement);
+
+                // Set the modal title dynamically based on the form being deleted
+                const modalTitleElement = modalElement.querySelector('.modal-title');
+                if (modalTitleElement) {
+                    modalTitleElement.textContent = `Are you sure you want to delete the form "${formTitle}"? This action cannot be undone.`;
+                }
+
+                // Show the modal
+                modalInstance.show();
+
+                // Log when a delete action is initiated
+                console.log(`Delete action initiated for form "${formTitle}".`);
+
+                // Attach event listener to the modal's confirm button for form deletion
+                const confirmDeleteButton = modalElement.querySelector('.confirm-delete');
+                if (confirmDeleteButton) {
+                    confirmDeleteButton.onclick = function() {
+                        const formId = button.getAttribute('data-form-id'); // Get the form ID from the delete button's data attribute
+                        const deleteForm = document.querySelector(`form[data-form-id="${formId}"]`);
+                        if (deleteForm) {
+                            deleteForm.submit();
+                        } else {
+                            console.error('Error: Delete form not found for form ID:', formId);
+                        }
+                    };
+                }
+            } else {
+                console.error('Error: Modal element not found for ID:', modalId);
+            }
+        });
+    });
+
+    // Clipboard copy functionality
+    const shareButtons = document.querySelectorAll('.btn-secondary');
+    shareButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            const formLink = this.getAttribute('data-form-link'); // Assuming each share button has a data attribute for the form link
+            if (formLink) {
+                navigator.clipboard.writeText(formLink).then(function() {
+                    console.log('Form link copied to clipboard:', formLink);
+                    alert('Form link copied to clipboard!');
+                }, function(err) {
+                    console.error('Could not copy form link to clipboard:', err);
+                    alert('Failed to copy the link. Please try again.');
+                });
+            } else {
+                console.error('Error: Form link not found for form ID:', this.getAttribute('data-form-id'));
+            }
+        });
+    });
+});

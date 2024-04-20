@@ -4,7 +4,11 @@ const mongoose = require("mongoose");
 const express = require("express");
 const session = require("express-session");
 const MongoStore = require('connect-mongo');
+const csrf = require('csurf'); // Added for CSRF protection
+const flash = require('connect-flash'); // Added for flash messages
 const authRoutes = require("./routes/authRoutes");
+const feedbackRoutes = require('./routes/feedbackRoutes'); // Added feedbackRoutes
+const feedbackSubmissionRoutes = require('./routes/feedbackSubmissionRoutes'); // Added feedbackSubmissionRoutes
 
 if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET) {
   console.error("Error: config environment variables not set. Please create/edit .env configuration file.");
@@ -46,6 +50,20 @@ app.use(
   }),
 );
 
+// Initialize flash middleware
+app.use(flash());
+
+// CSRF protection middleware
+app.use(csrf());
+
+// Middleware to make the csrfToken and flash messages available to all views
+app.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+  res.locals.successMsg = req.flash('success');
+  res.locals.errorMsg = req.flash('error');
+  next();
+});
+
 app.on("error", (error) => {
   console.error(`Server error: ${error.message}`);
   console.error(error.stack);
@@ -65,11 +83,18 @@ app.use((req, res, next) => {
       `Session accessed again at: ${new Date().toISOString()}, Views: ${sess.views}, User ID: ${sess.userId || '(unauthenticated)'}`,
     );
   }
+  console.log(`Session ID: ${req.sessionID}`); // Log the session ID for debugging
   next();
 });
 
 // Authentication Routes
 app.use(authRoutes);
+
+// Feedback Routes
+app.use(feedbackRoutes); // Using feedbackRoutes
+
+// Feedback Submission Routes
+app.use(feedbackSubmissionRoutes); // Using feedbackSubmissionRoutes
 
 // Root path response
 app.get("/", (req, res) => {

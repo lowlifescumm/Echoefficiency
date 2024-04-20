@@ -29,6 +29,10 @@ const feedbackFormSchema = new mongoose.Schema({
   creationDate: {
     type: Date,
     default: Date.now
+  },
+  link: {
+    type: String
+    // Removed the required constraint to allow initial save without the link
   }
 });
 
@@ -42,8 +46,21 @@ feedbackFormSchema.pre('save', function(next) {
     console.error('Error saving feedback form:', err);
     next(err);
   } else {
-    console.log('Feedback form saved successfully.');
+    if (this.isNew) {
+      // Generate the link on the first save
+      const domain = process.env.DOMAIN || 'http://echoefficiency.com'; 
+      this.link = `${domain}/form/${this._id}`;
+      console.log(`Feedback form link generated: ${this.link}`);
+    }
     next();
+  }
+});
+
+feedbackFormSchema.post('save', function(error, doc, next) {
+  if (error.name === 'MongoError' && error.code === 11000) {
+    next(new Error('There was a duplicate key error'));
+  } else {
+    next(error);
   }
 });
 

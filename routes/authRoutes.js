@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 
 router.get('/auth/register', (req, res) => {
-  res.render('register');
+  res.render('register', { csrfToken: req.csrfToken() });
 });
 
 router.post('/auth/register', async (req, res) => {
@@ -15,12 +15,13 @@ router.post('/auth/register', async (req, res) => {
     res.redirect('/auth/login');
   } catch (error) {
     console.error('Registration error:', error);
+    console.error(error.stack); // Logging the full error stack for better debugging
     res.status(500).send(error.message);
   }
 });
 
 router.get('/auth/login', (req, res) => {
-  res.render('login');
+  res.render('login', { csrfToken: req.csrfToken() });
 });
 
 router.post('/auth/login', async (req, res) => {
@@ -33,22 +34,27 @@ router.post('/auth/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
       req.session.userId = user._id;
+      console.log(`User ${username} logged in successfully. Session ID: ${req.sessionID}`); // Logging the successful login and session ID
       return res.redirect('/');
     } else {
       return res.status(400).send('Password is incorrect');
     }
   } catch (error) {
     console.error('Login error:', error);
+    console.error(error.stack); // Logging the full error stack for better debugging
     return res.status(500).send(error.message);
   }
 });
 
 router.get('/auth/logout', (req, res) => {
+  const sessionId = req.sessionID; // Storing session ID for logging before destruction
   req.session.destroy(err => {
     if (err) {
-      console.error('Error during session destruction:', err); // gpt_pilot_debugging_log
+      console.error('Error during session destruction:', err);
+      console.error(err.stack); // Logging the full error stack for better debugging
       return res.status(500).send('Error logging out');
     }
+    console.log(`Session ${sessionId} destroyed successfully.`); // Logging the successful session destruction
     res.redirect('/auth/login');
   });
 });

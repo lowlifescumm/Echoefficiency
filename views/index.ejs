@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <%- include('partials/_head.ejs') %>
-  <body>
+  <body style="background: url('/images/background.webp') no-repeat center center; background-size: cover;"> <!-- INPUT_REQUIRED {path_to_background_image} -->
 <%- include('partials/_header.ejs') %>
     <main role="main" class="container mt-4">
       <div class="text-center">
+        <img src="/images/logo.webp" alt="Echoefficiency Logo" style="max-width: 150px;"> <!-- INPUT_REQUIRED {path_to_logo_image} -->
         <h1>Echoefficiency</h1>
+        <% if (!session.userId) { %>
+          <p>Welcome to Echoefficiency, your ultimate tool for managing customer feedback efficiently. Get started by logging in or registering!</p>
+          <a href="/auth/login" class="btn btn-primary">Login</a> or <a href="/auth/register" class="btn btn-secondary">Register</a>
+        <% } else { %>
+          <p>Welcome back! What would you like to do today?</p>
+          <a href="/dashboard" class="btn btn-primary">View Dashboard</a>
+        <% } %>
       </div>
     </main>
   </body>

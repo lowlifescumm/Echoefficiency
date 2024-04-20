@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/_head.ejs') %>
+    <title>View Feedback Form</title>
+</head>
+<body>
+    <%- include('partials/_header.ejs') %>
+    <div class="container mt-5">
+        <h1><%= form.title %></h1>
+        <form action="/submit-feedback" method="POST">
+            <% form.questions.forEach((question, index) => { %>
+                <div class="mb-3">
+                    <label for="question<%= index %>" class="form-label"><%= question.questionText %></label>
+                    <% if (question.questionType === 'text') { %>
+                        <input type="text" class="form-control" id="question<%= index %>" name="feedback[question<%= index %>]" required>
+                    <% } else if (question.questionType === 'multipleChoice') { %>
+                        <% question.options.forEach((option, optionIndex) => { %>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="feedback[question<%= index %>]" id="option<%= index %><%= optionIndex %>" value="<%= option %>" required>
+                                <label class="form-check-label" for="option<%= index %><%= optionIndex %>">
+                                    <%= option %>
+                                </label>
+                            </div>
+                        <% }); %>
+                    <% } else if (question.questionType === 'checkbox') { %>
+                        <% question.options.forEach((option, optionIndex) => { %>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="feedback[question<%= index %>][]"
+                                       id="option<%= index %><%= optionIndex %>" value="<%= option %>" required>
+                                <label class="form-check-label" for="option<%= index %><%= optionIndex %>">
+                                    <%= option %>
+                                </label>
+                            </div>
+                        <% }); %>
+                    <% } else if (question.questionType === 'rating') { %>
+                        <select class="form-select" name="feedback[question<%= index %>]" required>
+                            <% for(let i = 1; i <= 5; i++) { %>
+                                <option value="<%= i %>"><%= i %></option>
+                            <% } %>
+                        </select>
+                    <% } %>
+                </div>
+            <% }); %>
+            <input type="hidden" name="formId" value="<%= form._id %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn bokeh-button">Submit Feedback</button> <!-- Applied bokeh-button class -->
+        </form>
+    </div>
+    <%- include('partials/_footer.ejs') %>
+</body>
+</html>

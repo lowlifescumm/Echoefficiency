@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= form.title %></title>
+  <!-- Include any necessary head elements -->
+</head>
+<body>
+  <h1><%= form.title %></h1>
+  <form id="feedbackForm">
+    <% form.questions.forEach((question, index) => { %>
+      <div>
+        <label><%= question.questionText %></label>
+        <% if (question.questionType === 'text') { %>
+          <input type="text" name="responses[<%= index %>]" required>
+        <% } else if (question.questionType === 'multipleChoice') { %>
+          <!-- Assuming multipleChoice questions have options array -->
+          <% question.options.forEach(option => { %>
+            <div>
+              <input type="radio" name="responses[<%= index %>]" value="<%= option %>" required> <%= option %>
+            </div>
+          <% }); %>
+        <% } else if (question.questionType === 'checkbox') { %>
+          <!-- Assuming checkbox questions have options array -->
+          <% question.options.forEach(option => { %>
+            <div>
+              <input type="checkbox" name="responses[<%= index %>]" value="<%= option %>"> <%= option %>
+            </div>
+          <% }); %>
+        <% } else if (question.questionType === 'rating') { %>
+          <select name="responses[<%= index %>]" required>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        <% } %>
+      </div>
+    <% }); %>
+    <input type="hidden" name="formId" value="<%= form._id %>">
+    <button type="submit">Submit Feedback</button>
+  </form>
+  <script>
+    document.getElementById('feedbackForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Prevent the default form submission
+      const formData = new FormData(event.target);
+      const formId = formData.get('formId');
+      const responses = {};
+      formData.forEach((value, key) => {
+        if (key.startsWith('responses[')) {
+          const index = key.match(/\[(.*?)\]/)[1];
+          responses[index] = value;
+        }
+      });
+
+      fetch('/submit-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Assuming CSRF token is handled globally or not required for this demo
+        },
+        body: JSON.stringify({ formId, responses })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Feedback submitted successfully:', data);
+        // Redirect or display a success message
+        alert('Thank you for your feedback!'); // Simple user feedback mechanism
+      })
+      .catch(error => {
+        console.error('Error submitting feedback:', error);
+        // Display an error message to the user
+        alert('An error occurred while submitting your feedback. Please try again.');
+      });
+    });
+  </script>
+</body>
+</html>

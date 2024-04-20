@@ -1,1 +1,143 @@
-/* Placeholder for custom styles */
+/* Custom styles for Echoefficiency Dashboard */
+
+/* Visual Hierarchy and Typography */
+.list-group-item {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Color and Button Consistency */
+.btn-secondary {
+  background-color: #6c757d; /* Consistent grey for view button */
+}
+.btn-primary {
+  background-color: #007bff; /* Consistent blue for edit button */
+}
+.btn-danger {
+  background-color: #dc3545; /* Consistent red for delete button */
+}
+
+/* Ensure color contrast ratios are accessible */
+.btn-secondary, .btn-primary, .btn-danger {
+  color: #fff;
+}
+
+/* Navigation and Layout */
+.navbar {
+  margin-bottom: 20px;
+  background-color: #004085; /* Brand-specific color for navbar */
+}
+
+/* Spacing for breathing room */
+.list-group-item {
+  margin-bottom: 10px;
+  padding: 20px;
+}
+
+/* Responsiveness and Mobile Usability */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+  }
+  .list-group-item {
+    padding: 15px;
+  }
+}
+
+/* Feedback and Confirmation */
+/* Note: Actual JavaScript for confirmation dialogs is handled in separate JS files */
+
+/* Functional Clarity */
+/* Tooltips and descriptions are added via data attributes in HTML, styled here for consistency */
+.tooltip-inner {
+  background-color: #f5f5f5;
+  color: #333;
+  font-size: 0.875rem;
+}
+
+/* Accessibility Enhancements */
+.list-group-item:focus, .btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Ensure all elements are accessible */
+a, button {
+  font-size: 1rem;
+}
+
+/* Welcome Messaging and Branding */
+.welcome-message {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #004085; /* Brand-specific color for text */
+}
+
+/* Layout and Design Enhancements */
+body {
+  background-image: url('/images/background.jpg'); /* Correct path to the background image */
+  background-size: cover;
+  background-position: center;
+}
+
+.navbar-brand img {
+  height: 50px; /* Logo size */
+  width: auto;
+}
+
+/* Interactive Elements Enhancements */
+.btn:hover {
+  opacity: 0.8;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .navbar-brand img {
+    height: 40px; /* Adjust logo size for mobile */
+  }
+}
+
+/* CSS Styling for Buttons with a Light Bokeh Effect */
+.bokeh-button {
+  background-color: #ffffff; /* White base */
+  color: #000000; /* Black text */
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  transition: background-color 0.3s, box-shadow 0.3s;
+  font-family: 'Arial', sans-serif; /* Clean, modern font */
+  text-transform: uppercase; /* Stylistic choice */
+  letter-spacing: 1px; /* Spacing for better readability */
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.bokeh-button:hover {
+  background-color: #e0e0e0; /* Light gray for hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  cursor: pointer;
+}
+
+.bokeh-button:focus, .bokeh-button:active {
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.bokeh-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+
+.bokeh-button:hover::after {
+  opacity: 1;
+}

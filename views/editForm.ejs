@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/_head.ejs') %>
+    <title>Edit Feedback Form</title>
+    <script src="/js/editForm.js"></script> <!-- Include the JavaScript file for handling dynamic question addition and removal -->
+</head>
+<body>
+    <%- include('partials/_header.ejs') %>
+    <div class="container mt-5">
+        <h1>Edit Feedback Form</h1>
+        <form action="/update-form/<%= form._id %>" method="POST" id="editForm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="mb-3">
+                <label for="title" class="form-label">Form Title</label>
+                <input type="text" class="form-control" id="title" name="title" value="<%= form.title %>" required>
+            </div>
+            <div id="questionsContainer">
+                <% form.questions.forEach((question, index) => { %>
+                    <div class="mb-3 question">
+                        <label for="questionText<%= index %>" class="form-label">Question <%= index + 1 %></label>
+                        <input type="text" class="form-control" id="questionText<%= index %>" name="questions[<%= index %>][questionText]" value="<%= question.questionText %>" required>
+                        <select class="form-select mt-2" name="questions[<%= index %>][questionType]" required>
+                            <option value="text" <%= question.questionType === 'text' ? 'selected' : '' %>>Text</option>
+                            <option value="multipleChoice" <%= question.questionType === 'multipleChoice' ? 'selected' : '' %>>Multiple Choice</option>
+                            <option value="checkbox" <%= question.questionType === 'checkbox' ? 'selected' : '' %>>Checkbox</option>
+                            <option value="rating" <%= question.questionType === 'rating' ? 'selected' : '' %>>Rating</option>
+                        </select>
+                        <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeQuestion(this)">Remove Question</button>
+                    </div>
+                <% }); %>
+            </div>
+            <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3" onclick="addQuestion()">Add Another Question</button>
+            <button type="submit" class="btn btn-primary" style="background-color: #007bff;">Update Form</button>
+        </form>
+    </div>
+    <%- include('partials/_footer.ejs') %>
+    <script>
+        // Function to dynamically add a new question to the form
+        function addQuestion() {
+            const questionIndex = document.querySelectorAll('.question').length;
+            const questionsContainer = document.getElementById('questionsContainer');
+            const newQuestionHTML = `
+                <div class="mb-3 question">
+                    <label for="questionText${questionIndex}" class="form-label">Question ${questionIndex + 1}</label>
+                    <input type="text" class="form-control" id="questionText${questionIndex}" name="questions[${questionIndex}][questionText]" required>
+                    <select class="form-select mt-2" name="questions[${questionIndex}][questionType]" required>
+                        <option value="text">Text</option>
+                        <option value="multipleChoice">Multiple Choice</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeQuestion(this)">Remove Question</button>
+                </div>
+            `;
+            questionsContainer.insertAdjacentHTML('beforeend', newQuestionHTML);
+        }
+
+        // Function to remove a question from the form
+        function removeQuestion(button) {
+            button.parentElement.remove();
+        }
+    </script>
+</body>
+</html>
