@@ -12,21 +12,21 @@
       <div>
         <label><%= question.questionText %></label>
         <% if (question.questionType === 'text') { %>
-          <input type="text" name="responses[<%= index %>]" required>
+          <input type="text" name="responses[]" required>
         <% } else if (question.questionType === 'multipleChoice') { %>
           <% question.options.forEach(option => { %>
             <div>
-              <input type="radio" name="responses[<%= index %>]" value="<%= option %>" required> <%= option %>
+              <input type="radio" name="responses[]" value="<%= option %>" required> <%= option %>
             </div>
           <% }); %>
         <% } else if (question.questionType === 'checkbox') { %>
           <% question.options.forEach(option => { %>
             <div>
-              <input type="checkbox" name="responses[<%= index %>]" value="<%= option %>"> <%= option %>
+              <input type="checkbox" name="responses[]" value="<%= option %>"> <%= option %>
             </div>
           <% }); %>
         <% } else if (question.questionType === 'rating') { %>
-          <select name="responses[<%= index %>]" required>
+          <select name="responses[]" required>
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -45,11 +45,10 @@
       event.preventDefault(); // Prevent the default form submission
       const formData = new FormData(event.target);
       const formId = formData.get('formId');
-      const responses = {};
+      const responses = [];
       formData.forEach((value, key) => {
-        if (key.startsWith('responses[')) {
-          const index = key.match(/\[(.*?)\]/)[1];
-          responses[index] = value;
+        if (key === 'responses[]') {
+          responses.push(value);
         }
       });
 
@@ -63,6 +62,7 @@
       })
       .then(response => {
         if (!response.ok) {
+          console.error('Error submitting feedback:', response.statusText);
           throw new Error('Network response was not ok');
         }
         return response.json();
