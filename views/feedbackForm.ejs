@@ -2,25 +2,24 @@
 <html>
 <head>
   <title><%= form.title %></title>
-  <!-- Include any necessary head elements -->
+  <link rel="stylesheet" href="/css/style.css"> <!-- Ensure the correct path to the CSS file -->
+  <script src="/js/main.js" defer></script> <!-- Ensure the correct path to the JavaScript file -->
 </head>
 <body>
   <h1><%= form.title %></h1>
-  <form id="feedbackForm">
+  <form id="feedbackForm" method="POST" action="/submit-feedback">
     <% form.questions.forEach((question, index) => { %>
       <div>
         <label><%= question.questionText %></label>
         <% if (question.questionType === 'text') { %>
           <input type="text" name="responses[<%= index %>]" required>
         <% } else if (question.questionType === 'multipleChoice') { %>
-          <!-- Assuming multipleChoice questions have options array -->
           <% question.options.forEach(option => { %>
             <div>
               <input type="radio" name="responses[<%= index %>]" value="<%= option %>" required> <%= option %>
             </div>
           <% }); %>
         <% } else if (question.questionType === 'checkbox') { %>
-          <!-- Assuming checkbox questions have options array -->
           <% question.options.forEach(option => { %>
             <div>
               <input type="checkbox" name="responses[<%= index %>]" value="<%= option %>"> <%= option %>
@@ -38,6 +37,7 @@
       </div>
     <% }); %>
     <input type="hidden" name="formId" value="<%= form._id %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button type="submit">Submit Feedback</button>
   </form>
   <script>
@@ -57,19 +57,22 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Assuming CSRF token is handled globally or not required for this demo
+          'CSRF-Token': formData.get('_csrf') // Correctly include the CSRF token in the headers
         },
         body: JSON.stringify({ formId, responses })
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
       .then(data => {
         console.log('Feedback submitted successfully:', data);
-        // Redirect or display a success message
         alert('Thank you for your feedback!'); // Simple user feedback mechanism
       })
       .catch(error => {
         console.error('Error submitting feedback:', error);
-        // Display an error message to the user
         alert('An error occurred while submitting your feedback. Please try again.');
       });
     });

@@ -146,22 +146,22 @@ router.post('/submit-feedback', async (req, res) => {
     const formExists = await FeedbackForm.findById(formId);
     if (!formExists) {
       console.log('Feedback form does not exist.');
-      return res.status(404).send('Feedback form does not exist.');
+      return res.status(404).json({ message: 'Feedback form does not exist.' });
     }
 
     const newSubmission = new FeedbackSubmission({
       formId,
-      responses, // Assuming the model matches this structure
-      submissionDate: new Date(),
+      responses, // Adjusted to match the expected structure
+      submittedAt: new Date(), // Changed to match the schema in FeedbackSubmission.js
     });
 
     await newSubmission.save();
     console.log('Feedback submitted successfully.');
-    res.send('Feedback submitted successfully.');
+    res.json({ message: 'Feedback submitted successfully.' });
   } catch (error) {
     console.error('Error submitting feedback:', error);
     console.error(error.stack);
-    return res.status(500).send('Error submitting feedback.');
+    res.status(500).json({ message: 'Error submitting feedback.', error: error });
   }
 });
 

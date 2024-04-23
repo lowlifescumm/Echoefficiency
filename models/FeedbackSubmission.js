@@ -6,8 +6,9 @@ const feedbackSubmissionSchema = new mongoose.Schema({
     ref: 'FeedbackForm',
     required: true
   },
-  feedback: {
-    type: mongoose.Schema.Types.Mixed,
+  responses: {
+    type: Map,
+    of: String,
     required: true
   },
   submittedAt: {
@@ -18,8 +19,8 @@ const feedbackSubmissionSchema = new mongoose.Schema({
 
 feedbackSubmissionSchema.pre('save', function(next) {
   console.log('Saving feedback submission for form ID:', this.formId);
-  if (!this.feedback || Object.keys(this.feedback).length === 0) {
-    const err = new Error('Feedback submission must include feedback.');
+  if (!this.responses || this.responses.size === 0) {
+    const err = new Error('Feedback submission must include responses.');
     console.error('Error saving feedback submission:', err);
     next(err);
   } else {

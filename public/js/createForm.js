@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <select class="form-select" id="questionType${questionCount}" name="questions[${questionCount - 1}][questionType]" required>
                     <option value="text">Text</option>
                     <option value="multipleChoice">Multiple Choice</option>
+                    <option value="checkbox">Checkbox</option>
+                    <option value="rating">Rating</option>
                 </select>
                 <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeQuestion(${questionCount})">Remove Question</button>
             </div>
