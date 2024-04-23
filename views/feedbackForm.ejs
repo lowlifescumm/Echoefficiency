@@ -12,21 +12,21 @@
       <div>
         <label><%= question.questionText %></label>
         <% if (question.questionType === 'text') { %>
-          <input type="text" name="responses[]" required>
+          <input type="text" name="responses[<%= question._id %>]" required>
         <% } else if (question.questionType === 'multipleChoice') { %>
           <% question.options.forEach(option => { %>
             <div>
-              <input type="radio" name="responses[]" value="<%= option %>" required> <%= option %>
+              <input type="radio" name="responses[<%= question._id %>]" value="<%= option %>" required> <%= option %>
             </div>
           <% }); %>
         <% } else if (question.questionType === 'checkbox') { %>
           <% question.options.forEach(option => { %>
             <div>
-              <input type="checkbox" name="responses[]" value="<%= option %>"> <%= option %>
+              <input type="checkbox" name="responses[<%= question._id %>][]" value="<%= option %>"> <%= option %>
             </div>
           <% }); %>
         <% } else if (question.questionType === 'rating') { %>
-          <select name="responses[]" required>
+          <select name="responses[<%= question._id %>]" required>
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -45,10 +45,18 @@
       event.preventDefault(); // Prevent the default form submission
       const formData = new FormData(event.target);
       const formId = formData.get('formId');
-      const responses = [];
+      const responses = {};
       formData.forEach((value, key) => {
-        if (key === 'responses[]') {
-          responses.push(value);
+        if (key.startsWith('responses[')) {
+          const questionId = key.match(/responses\[(.*?)\]/)[1];
+          if (key.endsWith('[]')) {
+            if (!responses[questionId]) {
+              responses[questionId] = [];
+            }
+            responses[questionId].push(value);
+          } else {
+            responses[questionId] = value;
+          }
         }
       });
 

@@ -149,9 +149,15 @@ router.post('/submit-feedback', async (req, res) => {
       return res.status(404).json({ message: 'Feedback form does not exist.' });
     }
 
+    // Convert responses to the expected Map format if necessary
+    const formattedResponses = Object.entries(responses).reduce((acc, [key, value]) => {
+      acc[key] = Array.isArray(value) ? value.join(', ') : value;
+      return acc;
+    }, {});
+
     const newSubmission = new FeedbackSubmission({
       formId,
-      responses, // Adjusted to match the expected structure
+      responses: formattedResponses, // Adjusted to match the expected structure
       submittedAt: new Date(), // Changed to match the schema in FeedbackSubmission.js
     });
 
