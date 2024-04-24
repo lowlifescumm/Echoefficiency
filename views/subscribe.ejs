@@ -24,7 +24,7 @@
     <%- include('partials/_footer.ejs') %>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        var stripe = Stripe('<%= process.env.STRIPE_PUBLIC_KEY %>');
+        var stripe = Stripe('<%= pk_live_51P2ySaFCvtDKeJTtWH8KN96n4mlJ7uqpsPY0MHfEjPEBsQF6zhsScsIhfphHStkbCBDfCXkcGLpNOp8pHhrmumEb00P7jbcwD0 %>'); // INPUT_REQUIRED {Your Stripe public key}
         var elements = stripe.elements();
 
         var style = {
@@ -50,24 +50,32 @@
         form.addEventListener('submit', function(event) {
             event.preventDefault();
 
-            stripe.createToken(card).then(function(result) {
+            stripe.createPaymentMethod({
+                type: 'card',
+                card: card,
+                billing_details: {
+                    email: document.getElementById('email').value,
+                },
+            }).then(function(result) {
                 if (result.error) {
                     var errorElement = document.getElementById('card-errors');
                     errorElement.textContent = result.error.message;
                 } else {
-                    stripeTokenHandler(result.token);
+                    // Send the paymentMethod.id to your server
+                    stripePaymentMethodHandler(result.paymentMethod.id);
                 }
             });
         });
 
-        function stripeTokenHandler(token) {
+        function stripePaymentMethodHandler(paymentMethodId) {
             var form = document.getElementById('subscription-form');
             var hiddenInput = document.createElement('input');
             hiddenInput.setAttribute('type', 'hidden');
-            hiddenInput.setAttribute('name', 'stripeToken');
-            hiddenInput.setAttribute('value', token.id);
+            hiddenInput.setAttribute('name', 'paymentMethodId');
+            hiddenInput.setAttribute('value', paymentMethodId);
             form.appendChild(hiddenInput);
 
+            // Submit the form
             form.submit();
         }
     </script>

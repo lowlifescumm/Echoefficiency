@@ -3,6 +3,11 @@ const router = express.Router();
 const { isAuthenticated } = require('./middleware/authMiddleware');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// Serve the subscription page and pass the Stripe public key
+router.get('/subscribe', isAuthenticated, (req, res) => {
+  res.render('subscribe', { STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY });
+});
+
 router.post('/create-subscription', isAuthenticated, async (req, res) => {
   try {
     const { email, paymentMethodId } = req.body;
@@ -16,7 +21,7 @@ router.post('/create-subscription', isAuthenticated, async (req, res) => {
 
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
-      items: [{ plan: process.env.STRIPE_PLAN_ID }], // Use your Stripe plan ID from environment variables
+      items: [{ plan: process.env.STRIPE_PLAN_ID }],
       expand: ['latest_invoice.payment_intent'],
     });
 
@@ -24,6 +29,7 @@ router.post('/create-subscription', isAuthenticated, async (req, res) => {
     res.status(200).json(subscription);
   } catch (error) {
     console.error('Create Subscription Error:', error);
+    console.error(error.stack);
     res.status(400).json({ error: 'An error occurred while creating a subscription', details: error.message });
   }
 });

@@ -11,7 +11,7 @@ const feedbackRoutes = require('./routes/feedbackRoutes'); // Added feedbackRout
 const feedbackSubmissionRoutes = require('./routes/feedbackSubmissionRoutes'); // Added feedbackSubmissionRoutes
 const paymentRoutes = require('./routes/paymentRoutes'); // Added paymentRoutes
 
-if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET || !process.env.STRIPE_SECRET_KEY) {
+if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET || !process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PUBLIC_KEY || !process.env.STRIPE_PLAN_ID) {
   console.error("Error: config environment variables not set. Please create/edit .env configuration file.");
   process.exit(-1);
 }
@@ -99,6 +99,11 @@ app.use(feedbackSubmissionRoutes); // Using feedbackSubmissionRoutes
 
 // Payment Routes
 app.use(paymentRoutes); // Using paymentRoutes
+
+// Serve the subscription page and pass the Stripe public key
+app.get("/subscribe", (req, res) => {
+  res.render("subscribe", { STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY });
+});
 
 // Root path response
 app.get("/", (req, res) => {
