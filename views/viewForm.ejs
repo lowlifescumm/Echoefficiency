@@ -13,11 +13,11 @@
                 <div class="mb-3">
                     <label for="question<%= index %>" class="form-label"><%= question.questionText %></label>
                     <% if (question.questionType === 'text') { %>
-                        <input type="text" class="form-control" id="question<%= index %>" name="feedback[question<%= index %>]" required>
+                        <input type="text" class="form-control" id="question<%= index %>" name="responses[<%= question._id %>]" required>
                     <% } else if (question.questionType === 'multipleChoice') { %>
                         <% question.options.forEach((option, optionIndex) => { %>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="feedback[question<%= index %>]" id="option<%= index %><%= optionIndex %>" value="<%= option %>" required>
+                                <input class="form-check-input" type="radio" name="responses[<%= question._id %>]" id="option<%= index %><%= optionIndex %>" value="<%= option %>" required>
                                 <label class="form-check-label" for="option<%= index %><%= optionIndex %>">
                                     <%= option %>
                                 </label>
@@ -26,7 +26,7 @@
                     <% } else if (question.questionType === 'checkbox') { %>
                         <% question.options.forEach((option, optionIndex) => { %>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="feedback[question<%= index %>][]"
+                                <input class="form-check-input" type="checkbox" name="responses[<%= question._id %>][]"
                                        id="option<%= index %><%= optionIndex %>" value="<%= option %>" required>
                                 <label class="form-check-label" for="option<%= index %><%= optionIndex %>">
                                     <%= option %>
@@ -34,7 +34,7 @@
                             </div>
                         <% }); %>
                     <% } else if (question.questionType === 'rating') { %>
-                        <select class="form-select" name="feedback[question<%= index %>]" required>
+                        <select class="form-select" name="responses[<%= question._id %>]" required>
                             <% for(let i = 1; i <= 5; i++) { %>
                                 <option value="<%= i %>"><%= i %></option>
                             <% } %>
@@ -48,5 +48,46 @@
         </form>
     </div>
     <%- include('partials/_footer.ejs') %>
+    <script>
+        document.querySelector('form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const formId = formData.get('formId');
+            const csrfToken = formData.get('_csrf');
+            const responses = {};
+            formData.forEach((value, key) => {
+                if (key.startsWith('responses[')) {
+                    const questionId = key.match(/responses\[(.*?)\]/)[1];
+                    if (key.endsWith('[]')) {
+                        if (!responses[questionId]) {
+                            responses[questionId] = [];
+                        }
+                        responses[questionId].push(value);
+                    } else {
+                        responses[questionId] = value;
+                    }
+                }
+            });
+
+            fetch('/submit-feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ formId, responses })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting feedback:', error);
+                alert('An error occurred while submitting your feedback. Please try again.');
+            });
+        });
+    </script>
 </body>
 </html>

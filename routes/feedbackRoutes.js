@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const FeedbackForm = require('../models/FeedbackForm');
-const FeedbackSubmission = require('../models/FeedbackSubmission'); // Adjust the path as needed
+const FeedbackSubmission = require('../models/FeedbackSubmission');
 const { isAuthenticated } = require('./middleware/authMiddleware');
 
 router.post('/create-form', isAuthenticated, async (req, res) => {
@@ -25,17 +25,11 @@ router.post('/create-form', isAuthenticated, async (req, res) => {
       title,
       questions,
       creationDate: new Date(),
-      // Initially, do not set the link field
     });
 
-    // Save the form to generate its unique _id
-    await newForm.save();
-
-    // Generate the unique URL for the form using the generated _id
     const formLink = `${req.protocol}://${req.get('host')}/form/${newForm._id.toString()}`;
     newForm.link = formLink;
 
-    // Save the form again with the unique URL
     await newForm.save();
 
     console.log('Feedback form created successfully:', newForm);
@@ -141,7 +135,12 @@ router.get('/form/:formId', async (req, res) => {
 
 router.post('/submit-feedback', async (req, res) => {
   try {
-    const { formId, responses } = req.body; // Assuming the form sends `formId` and `responses`
+    const { formId, responses } = req.body;
+
+    if (!responses) {
+      console.log('No responses provided.');
+      return res.status(400).json({ message: 'No responses provided.' });
+    }
 
     const formExists = await FeedbackForm.findById(formId);
     if (!formExists) {
@@ -149,7 +148,6 @@ router.post('/submit-feedback', async (req, res) => {
       return res.status(404).json({ message: 'Feedback form does not exist.' });
     }
 
-    // Convert responses to the expected Map format if necessary
     const formattedResponses = Object.entries(responses).reduce((acc, [key, value]) => {
       acc[key] = Array.isArray(value) ? value.join(', ') : value;
       return acc;
@@ -157,8 +155,8 @@ router.post('/submit-feedback', async (req, res) => {
 
     const newSubmission = new FeedbackSubmission({
       formId,
-      responses: formattedResponses, // Adjusted to match the expected structure
-      submittedAt: new Date(), // Changed to match the schema in FeedbackSubmission.js
+      responses: formattedResponses,
+      submittedAt: new Date(),
     });
 
     await newSubmission.save();
