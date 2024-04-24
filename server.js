@@ -9,8 +9,9 @@ const flash = require('connect-flash'); // Added for flash messages
 const authRoutes = require("./routes/authRoutes");
 const feedbackRoutes = require('./routes/feedbackRoutes'); // Added feedbackRoutes
 const feedbackSubmissionRoutes = require('./routes/feedbackSubmissionRoutes'); // Added feedbackSubmissionRoutes
+const paymentRoutes = require('./routes/paymentRoutes'); // Added paymentRoutes
 
-if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET) {
+if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET || !process.env.STRIPE_SECRET_KEY) {
   console.error("Error: config environment variables not set. Please create/edit .env configuration file.");
   process.exit(-1);
 }
@@ -95,6 +96,9 @@ app.use(feedbackRoutes); // Using feedbackRoutes
 
 // Feedback Submission Routes
 app.use(feedbackSubmissionRoutes); // Using feedbackSubmissionRoutes
+
+// Payment Routes
+app.use(paymentRoutes); // Using paymentRoutes
 
 // Root path response
 app.get("/", (req, res) => {
