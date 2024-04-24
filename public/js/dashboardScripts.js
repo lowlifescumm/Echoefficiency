@@ -17,21 +17,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Clipboard copy functionality
-    const shareButtons = document.querySelectorAll('.btn-secondary');
+    const shareButtons = document.querySelectorAll('.share-btn');
     shareButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
+        button.addEventListener('click', function() {
             const formLink = this.getAttribute('data-form-link');
             if (formLink) {
                 navigator.clipboard.writeText(formLink).then(function() {
-                    console.log('Form link copied to clipboard:', formLink);
                     alert('Form link copied to clipboard!');
                 }, function(err) {
-                    console.error('Could not copy form link to clipboard:', err);
-                    alert('Failed to copy the link. Please try again.');
+                    alert('Could not copy form link: ', err);
                 });
-            } else {
-                console.error('Error: Form link not found for form ID:', this.getAttribute('data-form-id'));
-                alert('Error: Form link not found. Please try again.');
             }
         });
     });
