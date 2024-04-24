@@ -24,7 +24,7 @@
     <%- include('partials/_footer.ejs') %>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        var stripe = Stripe('<%= pk_live_51P2ySaFCvtDKeJTtWH8KN96n4mlJ7uqpsPY0MHfEjPEBsQF6zhsScsIhfphHStkbCBDfCXkcGLpNOp8pHhrmumEb00P7jbcwD0 %>'); // INPUT_REQUIRED {Your Stripe public key}
+        var stripe = Stripe('<%=pk_live_51P2ySaFCvtDKeJTtWH8KN96n4mlJ7uqpsPY0MHfEjPEBsQF6zhsScsIhfphHStkbCBDfCXkcGLpNOp8pHhrmumEb00P7jbcwD0%>'); // INPUT_REQUIRED {Your Stripe public key}
         var elements = stripe.elements();
 
         var style = {
