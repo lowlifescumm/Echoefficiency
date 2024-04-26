@@ -11,13 +11,25 @@ router.get('/subscribe', isAuthenticated, (req, res) => {
 router.post('/create-subscription', isAuthenticated, async (req, res) => {
   try {
     const { email, paymentMethodId } = req.body;
-    const customer = await stripe.customers.create({
+    // Check if the customer already exists
+    let customer = await stripe.customers.list({
       email: email,
-      payment_method: paymentMethodId,
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
+      limit: 1
     });
+
+    if (customer.data.length === 0) {
+      // Create a new customer if not exists
+      customer = await stripe.customers.create({
+        email: email,
+        payment_method: paymentMethodId,
+        invoice_settings: {
+          default_payment_method: paymentMethodId,
+        },
+      });
+    } else {
+      // Use the existing customer
+      customer = customer.data[0];
+    }
 
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
@@ -26,7 +38,7 @@ router.post('/create-subscription', isAuthenticated, async (req, res) => {
     });
 
     console.log('Subscription created successfully:', subscription);
-    res.status(200).json(subscription);
+    res.status(200).json({ message: 'Subscription created successfully', subscriptionId: subscription.id });
   } catch (error) {
     console.error('Create Subscription Error:', error);
     console.error(error.stack);

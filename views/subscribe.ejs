@@ -24,61 +24,6 @@
     </div>
     <%- include('partials/_footer.ejs') %>
     <script src="https://js.stripe.com/v3/"></script>
-    <script>
-        var stripe = Stripe('<%= STRIPE_PUBLIC_KEY %>'); 
-        var elements = stripe.elements();
-
-        var style = {
-            base: {
-                fontSize: '16px',
-                color: '#32325d',
-            },
-        };
-
-        var card = elements.create('card', {style: style});
-        card.mount('#card-element');
-
-        card.addEventListener('change', function(event) {
-            var displayError = document.getElementById('card-errors');
-            if (event.error) {
-                displayError.textContent = event.error.message;
-            } else {
-                displayError.textContent = '';
-            }
-        });
-
-        var form = document.getElementById('subscription-form');
-        form.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            stripe.createPaymentMethod({
-                type: 'card',
-                card: card,
-                billing_details: {
-                    email: document.getElementById('email').value,
-                },
-            }).then(function(result) {
-                if (result.error) {
-                    var errorElement = document.getElementById('card-errors');
-                    errorElement.textContent = result.error.message;
-                } else {
-                    // Send the paymentMethod.id to your server
-                    stripePaymentMethodHandler(result.paymentMethod.id);
-                }
-            });
-        });
-
-        function stripePaymentMethodHandler(paymentMethodId) {
-            var form = document.getElementById('subscription-form');
-            var hiddenInput = document.createElement('input');
-            hiddenInput.setAttribute('type', 'hidden');
-            hiddenInput.setAttribute('name', 'paymentMethodId');
-            hiddenInput.setAttribute('value', paymentMethodId);
-            form.appendChild(hiddenInput);
-
-            // Submit the form
-            form.submit();
-        }
-    </script>
+    <script src="/js/subscribe.js"></script>
 </body>
 </html>
