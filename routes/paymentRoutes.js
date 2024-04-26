@@ -10,7 +10,7 @@ router.get('/subscribe', isAuthenticated, (req, res) => {
 
 router.post('/create-subscription', isAuthenticated, async (req, res) => {
   try {
-    const { email, paymentMethodId } = req.body;
+    const { email, stripeToken } = req.body;
     // Check if the customer already exists
     let customer = await stripe.customers.list({
       email: email,
@@ -21,14 +21,17 @@ router.post('/create-subscription', isAuthenticated, async (req, res) => {
       // Create a new customer if not exists
       customer = await stripe.customers.create({
         email: email,
-        payment_method: paymentMethodId,
-        invoice_settings: {
-          default_payment_method: paymentMethodId,
-        },
+        source: stripeToken, // Changed from payment_method to source to match the token from the form
       });
     } else {
       // Use the existing customer
       customer = customer.data[0];
+      // Attach the source if customer already exists and does not have a default source
+      if (!customer.default_source) {
+        await stripe.customers.update(customer.id, {
+          source: stripeToken,
+        });
+      }
     }
 
     const subscription = await stripe.subscriptions.create({
