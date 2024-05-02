@@ -27,7 +27,7 @@
     <script src="/js/payment.js"></script>
     <script>
         // Create a Stripe client.
-        var stripe = Stripe('<%=pk_live_51P2ySaFCvtDKeJTtWH8KN96n4mlJ7uqpsPY0MHfEjPEBsQF6zhsScsIhfphHStkbCBDfCXkcGLpNOp8pHhrmumEb00P7jbcwD0%>'); 
+        var stripe = Stripe('<%= STRIPE_PUBLIC_KEY %>'); 
 
         // Create an instance of Elements.
         var elements = stripe.elements();
