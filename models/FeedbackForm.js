@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
 const questionSchema = new mongoose.Schema({
   questionText: {
@@ -10,7 +10,7 @@ const questionSchema = new mongoose.Schema({
     enum: ['text', 'multipleChoice', 'checkbox', 'rating'],
     required: true
   }
-});
+})
 
 const feedbackFormSchema = new mongoose.Schema({
   ownerId: {
@@ -34,36 +34,36 @@ const feedbackFormSchema = new mongoose.Schema({
     type: String
     // Removed the required constraint to allow initial save without the link
   }
-});
+})
 
-function arrayLimit(val) {
-  return val.length > 0;
+function arrayLimit (val) {
+  return val.length > 0
 }
 
-feedbackFormSchema.pre('save', function(next) {
+feedbackFormSchema.pre('save', function (next) {
   if (!this.questions || this.questions.length < 1) {
-    const err = new Error('Feedback form must have at least one question.');
-    console.error('Error saving feedback form:', err);
-    next(err);
+    const err = new Error('Feedback form must have at least one question.')
+    console.error('Error saving feedback form:', err)
+    next(err)
   } else {
     if (this.isNew) {
       // Generate the link on the first save
-      const domain = process.env.DOMAIN || 'http://echoefficiency.com'; 
-      this.link = `${domain}/form/${this._id}`;
-      console.log(`Feedback form link generated: ${this.link}`);
+      const domain = process.env.DOMAIN || 'http://echoefficiency.com'
+      this.link = `${domain}/form/${this._id}`
+      console.log(`Feedback form link generated: ${this.link}`)
     }
-    next();
+    next()
   }
-});
+})
 
-feedbackFormSchema.post('save', function(error, doc, next) {
+feedbackFormSchema.post('save', function (error, doc, next) {
   if (error.name === 'MongoError' && error.code === 11000) {
-    next(new Error('There was a duplicate key error'));
+    next(new Error('There was a duplicate key error'))
   } else {
-    next(error);
+    next(error)
   }
-});
+})
 
-const FeedbackForm = mongoose.model('FeedbackForm', feedbackFormSchema);
+const FeedbackForm = mongoose.model('FeedbackForm', feedbackFormSchema)
 
-module.exports = FeedbackForm;
+module.exports = FeedbackForm
