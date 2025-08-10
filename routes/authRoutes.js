@@ -9,13 +9,18 @@ router.get('/auth/register', (req, res) => {
 
 router.post('/auth/register', async (req, res) => {
   try {
-    const { username, password } = req.body
+    const { username, email, password } = req.body
     // User model will automatically hash the password using bcrypt
-    await User.create({ username, password })
+    await User.create({ username, email, password })
     res.redirect('/auth/login')
   } catch (error) {
     if (error.code === 11000) { // Duplicate key error
-      return res.status(409).send('Username already exists.')
+      if (error.keyPattern.username) {
+        return res.status(409).send('Username already exists.');
+      } else if (error.keyPattern.email) {
+        return res.status(409).send('Email already exists.');
+      }
+      return res.status(409).send('Username or Email already exists.');
     }
     console.error('Registration error:', error)
     console.error(error.stack) // Logging the full error stack for better debugging

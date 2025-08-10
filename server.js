@@ -4,7 +4,7 @@ const app = require('./app')
 
 const port = process.env.PORT || 3000
 
-if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET || !process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PUBLIC_KEY || !process.env.STRIPE_PLAN_ID) {
+if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET || !process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PUBLIC_KEY || !process.env.STRIPE_PRICE_ID) {
   console.error('Error: config environment variables not set. Please create/edit .env configuration file.')
   process.exit(-1)
 }
