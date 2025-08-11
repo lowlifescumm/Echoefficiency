@@ -46,6 +46,16 @@ This is the most important step. In the **Environment** section of your web serv
 *   `STRIPE_SECRET_KEY`: Your "Secret key" from the [Stripe Dashboard](https://dashboard.stripe.com/apikeys).
 *   `STRIPE_PRICE_ID`: The ID of the subscription **Price** in Stripe. You can find this in your Stripe Dashboard. Go to the Product, and under the "Pricing" section, you will find the Price ID (it starts with `price_`).
 
+### Email Configuration (Optional)
+
+The following variables are for sending password reset emails. If you do not configure them, the application will still run, and password reset links will be printed to the console logs instead.
+
+*   `EMAIL_HOST`: Your SMTP host (e.g., `smtp.mailgun.org`).
+*   `EMAIL_PORT`: Your SMTP port (e.g., 587).
+*   `EMAIL_USER`: Your SMTP username.
+*   `EMAIL_PASS`: Your SMTP password.
+*   `EMAIL_FROM`: The "From" address for sending emails (e.g., `noreply@yourdomain.com`).
+
 **Important**: Do not share your `SESSION_SECRET` or `STRIPE_SECRET_KEY` with anyone.
 
 ## 7. Create the Web Service

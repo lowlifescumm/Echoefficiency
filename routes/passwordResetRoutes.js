@@ -31,24 +31,30 @@ router.post('/forgot', async (req, res) => {
 
       await user.save();
 
-      // Send the email
       const resetURL = `http://${req.headers.host}/password/reset/${token}`;
-      const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click on the following link, or paste this into your browser to complete the process:\n\n${resetURL}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`;
 
-      try {
-        await sendEmail({
-          to: user.email,
-          subject: 'Password Reset Token',
-          text: message,
-        });
-
-        req.flash('success', 'An email has been sent with password reset instructions.');
-      } catch (err) {
-        console.error('Email sending error:', err);
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save({ validateBeforeSave: false });
-        req.flash('error', 'There was an error sending the email. Please try again later.');
+      // If email is configured, send email. Otherwise, log to console.
+      if (process.env.EMAIL_HOST) {
+        const message = `You are receiving this email because you (or someone else) have requested the reset of a password. Please click on the following link, or paste this into your browser to complete the process:\n\n${resetURL}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.`;
+        try {
+          await sendEmail({
+            to: user.email,
+            subject: 'Password Reset Token',
+            text: message,
+          });
+          req.flash('success', 'An email has been sent with password reset instructions.');
+        } catch (err) {
+          console.error('Email sending error:', err);
+          user.passwordResetToken = undefined;
+          user.passwordResetExpires = undefined;
+          await user.save({ validateBeforeSave: false });
+          req.flash('error', 'There was an error sending the email. Please try again later.');
+        }
+      } else {
+        console.log('--- PASSWORD RESET (NO EMAIL CONFIGURED) ---');
+        console.log(`Reset link for ${user.email}: ${resetURL}`);
+        console.log('-------------------------------------------');
+        req.flash('success', 'Password reset link generated (see console).');
       }
     }
 
