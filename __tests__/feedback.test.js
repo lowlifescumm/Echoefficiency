@@ -89,4 +89,51 @@ describe('Feedback Routes', () => {
       expect(res.text).not.toContain('Other Form');
     });
   });
+  describe('RBAC Middleware', () => {
+    it('should prevent a user with a "Viewer" role from creating a form', async () => {
+      // Create a second user to be our "Viewer"
+      await request(app)
+        .post('/auth/register')
+        .send({ username: 'vieweruser', email: 'viewer@example.com', password: 'password123' });
+      const viewerUser = await User.findOne({ username: 'vieweruser' });
+
+      // Create a membership for the viewer in the main user's organization
+      await Membership.create({
+        user: viewerUser._id,
+        organization: organization._id,
+        role: 'Viewer',
+      });
+
+      // Log in as the viewer
+      const viewerAgent = request.agent(app);
+      await viewerAgent
+        .post('/auth/login')
+        .send({ username: 'vieweruser', password: 'password123' });
+
+      // The viewer needs to have their current organization set in the session.
+      // The login route does this, but we need to ensure it's the *correct* one.
+      // Let's manually set the currentOrganization for the viewer user for this test.
+      await User.findByIdAndUpdate(viewerUser._id, { currentOrganization: organization._id });
+      // Re-login to update the session
+      await viewerAgent
+        .post('/auth/login')
+        .send({ username: 'vieweruser', password: 'password123' });
+
+      const formPayload = {
+        title: 'Viewer Test Form',
+        questions: [{ questionText: 'Should not be created', questionType: 'text' }],
+      };
+
+      const res = await viewerAgent
+        .post('/create-form')
+        .send(formPayload);
+
+      // Expect a 403 Forbidden error
+      expect(res.statusCode).toBe(403);
+
+      // Verify the form was NOT created
+      const form = await FeedbackForm.findOne({ title: 'Viewer Test Form' });
+      expect(form).toBeNull();
+    });
+  });
 });

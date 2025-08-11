@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/_head.ejs') %>
+<body>
+<%- include('partials/_header.ejs') %>
+<main role="main" class="container mt-5">
+    <h2>Manage Organization</h2>
+
+    <!-- Invite New Member Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            Invite New Member
+        </div>
+        <div class="card-body">
+            <form action="/organization/invite" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="row">
+                    <div class="col-md-5">
+                        <input type="email" name="email" class="form-control" placeholder="User's email" required>
+                    </div>
+                    <div class="col-md-5">
+                        <select name="role" class="form-select" required>
+                            <option value="Viewer">Viewer</option>
+                            <option value="Analyst">Analyst</option>
+                            <option value="Editor">Editor</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Invite</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Member List -->
+    <h3>Members</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% members.forEach(member => { %>
+                <tr>
+                    <td><%= member.user.username %></td>
+                    <td><%= member.user.email %></td>
+                    <td>
+                        <form action="/organization/member/<%= member._id %>/update-role" method="POST" class="d-inline">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <select name="role" class="form-select" onchange="this.form.submit()">
+                                <option value="Viewer" <%= member.role === 'Viewer' ? 'selected' : '' %>>Viewer</option>
+                                <option value="Analyst" <%= member.role === 'Analyst' ? 'selected' : '' %>>Analyst</option>
+                                <option value="Editor" <%= member.role === 'Editor' ? 'selected' : '' %>>Editor</option>
+                                <option value="Admin" <%= member.role === 'Admin' ? 'selected' : '' %>>Admin</option>
+                                <% if (member.role === 'Owner') { %>
+                                    <option value="Owner" selected>Owner</option>
+                                <% } %>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        <% if (member.role !== 'Owner') { %>
+                            <form action="/organization/member/<%= member._id %>/remove" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this member?');">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                            </form>
+                        <% } %>
+                    </td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+</main>
+<%- include('partials/_footer.ejs') %>
+</body>
+</html>

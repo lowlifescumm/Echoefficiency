@@ -3,8 +3,9 @@ const router = express.Router()
 const FeedbackForm = require('../models/FeedbackForm')
 const FeedbackSubmission = require('../models/FeedbackSubmission')
 const { isAuthenticated } = require('./middleware/authMiddleware')
+const { hasPermission } = require('./middleware/rbacMiddleware')
 
-router.post('/create-form', isAuthenticated, async (req, res) => {
+router.post('/create-form', isAuthenticated, hasPermission('create_form'), async (req, res) => {
   try {
     const { title, questions } = req.body
     const ownerId = req.session.userId
@@ -42,7 +43,7 @@ router.post('/create-form', isAuthenticated, async (req, res) => {
   }
 })
 
-router.get('/create-form', isAuthenticated, (req, res) => {
+router.get('/create-form', isAuthenticated, hasPermission('create_form'), (req, res) => {
   res.render('createForm', { csrfToken: res.locals.csrfToken })
 })
 
@@ -50,7 +51,7 @@ router.get('/success', isAuthenticated, (req, res) => {
   res.render('success', { message: 'Feedback form created successfully!' })
 })
 
-router.get('/dashboard', isAuthenticated, async (req, res) => {
+router.get('/dashboard', isAuthenticated, hasPermission('view_dashboard'), async (req, res) => {
   try {
     if (!req.session.currentOrganizationId) {
       // Handle case where user has no active organization
@@ -67,7 +68,7 @@ router.get('/dashboard', isAuthenticated, async (req, res) => {
   }
 })
 
-router.get('/edit-form/:formId', isAuthenticated, async (req, res) => {
+router.get('/edit-form/:formId', isAuthenticated, hasPermission('edit_form'), async (req, res) => {
   try {
     const form = await FeedbackForm.findById(req.params.formId).lean()
     if (!form) {
@@ -83,7 +84,7 @@ router.get('/edit-form/:formId', isAuthenticated, async (req, res) => {
   }
 })
 
-router.post('/update-form/:formId', isAuthenticated, async (req, res) => {
+router.post('/update-form/:formId', isAuthenticated, hasPermission('edit_form'), async (req, res) => {
   try {
     const { title, questions } = req.body
     await FeedbackForm.findByIdAndUpdate(req.params.formId, { title, questions })
@@ -96,7 +97,7 @@ router.post('/update-form/:formId', isAuthenticated, async (req, res) => {
   }
 })
 
-router.post('/delete-form/:formId', isAuthenticated, async (req, res) => {
+router.post('/delete-form/:formId', isAuthenticated, hasPermission('delete_form'), async (req, res) => {
   try {
     await FeedbackForm.findByIdAndDelete(req.params.formId)
     console.log('Feedback form deleted successfully')
@@ -108,7 +109,7 @@ router.post('/delete-form/:formId', isAuthenticated, async (req, res) => {
   }
 })
 
-router.get('/view-form/:formId', isAuthenticated, async (req, res) => {
+router.get('/view-form/:formId', isAuthenticated, hasPermission('view_submissions'), async (req, res) => {
   try {
     const form = await FeedbackForm.findById(req.params.formId).lean()
     if (!form) {

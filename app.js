@@ -8,6 +8,7 @@ const feedbackRoutes = require('./routes/feedbackRoutes')
 const feedbackSubmissionRoutes = require('./routes/feedbackSubmissionRoutes')
 const paymentRoutes = require('./routes/paymentRoutes')
 const passwordResetRoutes = require('./routes/passwordResetRoutes')
+const organizationRoutes = require('./routes/organizationRoutes')
 
 const app = express()
 
@@ -89,6 +90,7 @@ app.use(feedbackRoutes)
 app.use(feedbackSubmissionRoutes)
 app.use(paymentRoutes)
 app.use('/password', passwordResetRoutes)
+app.use('/organization', organizationRoutes)
 
 app.get('/subscribe', (req, res) => {
   res.render('subscribe', { STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY })
