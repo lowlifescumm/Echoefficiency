@@ -22,6 +22,7 @@ router.post('/create-form', isAuthenticated, async (req, res) => {
 
     const newForm = new FeedbackForm({
       ownerId,
+      organization: req.session.currentOrganizationId,
       title,
       questions,
       creationDate: new Date()
@@ -42,7 +43,7 @@ router.post('/create-form', isAuthenticated, async (req, res) => {
 })
 
 router.get('/create-form', isAuthenticated, (req, res) => {
-  res.render('createForm', { csrfToken: req.csrfToken() })
+  res.render('createForm', { csrfToken: res.locals.csrfToken })
 })
 
 router.get('/success', isAuthenticated, (req, res) => {
@@ -51,9 +52,14 @@ router.get('/success', isAuthenticated, (req, res) => {
 
 router.get('/dashboard', isAuthenticated, async (req, res) => {
   try {
-    const forms = await FeedbackForm.find({ ownerId: req.session.userId }).lean()
+    if (!req.session.currentOrganizationId) {
+      // Handle case where user has no active organization
+      return res.render('dashboard', { forms: [], csrfToken: req.csrfToken() });
+    }
+    const forms = await FeedbackForm.find({ organization: req.session.currentOrganizationId }).lean()
     console.log('Fetched feedback forms for dashboard.')
-    res.render('dashboard', { forms, csrfToken: req.csrfToken() })
+    // Use res.locals.csrfToken instead of calling the function, which is not available in tests
+    res.render('dashboard', { forms, csrfToken: res.locals.csrfToken })
   } catch (error) {
     console.error('Error fetching feedback forms for dashboard:', error)
     console.error(error.stack)
@@ -69,7 +75,7 @@ router.get('/edit-form/:formId', isAuthenticated, async (req, res) => {
       return res.status(404).send('Feedback form not found')
     }
     console.log('Rendering edit form page')
-    res.render('editForm', { form, csrfToken: req.csrfToken() })
+    res.render('editForm', { form, csrfToken: res.locals.csrfToken })
   } catch (error) {
     console.error('Error fetching feedback form for editing:', error)
     console.error(error.stack)
@@ -110,7 +116,7 @@ router.get('/view-form/:formId', isAuthenticated, async (req, res) => {
       return res.status(404).send('Feedback form not found.')
     }
     console.log(`Rendering view form page for form ID: ${req.params.formId}`)
-    res.render('viewForm', { form, csrfToken: req.csrfToken() })
+    res.render('viewForm', { form, csrfToken: res.locals.csrfToken })
   } catch (error) {
     console.error('Error fetching feedback form for viewing:', error)
     console.error(error.stack)

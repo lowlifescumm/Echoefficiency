@@ -6,7 +6,11 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true, lowercase: true },
   password: { type: String, required: true },
   passwordResetToken: String,
-  passwordResetExpires: Date
+  passwordResetExpires: Date,
+  currentOrganization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization'
+  }
 })
 
 userSchema.pre('save', function (next) {

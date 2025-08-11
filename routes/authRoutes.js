@@ -7,13 +7,44 @@ router.get('/auth/register', (req, res) => {
   res.render('register', { csrfToken: req.csrfToken() })
 })
 
+const Organization = require('../models/Organization');
+const Membership = require('../models/Membership');
+
 router.post('/auth/register', async (req, res) => {
+  let newUser;
   try {
-    const { username, email, password } = req.body
-    // User model will automatically hash the password using bcrypt
-    await User.create({ username, email, password })
-    res.redirect('/auth/login')
+    const { username, email, password } = req.body;
+
+    // 1. Create the user
+    newUser = await User.create({ username, email, password });
+
+    // 2. Create an organization for the user
+    const organization = await Organization.create({
+      name: `${username}'s Organization`,
+      owner: newUser._id,
+    });
+
+    // 3. Create the membership linking the user and organization
+    await Membership.create({
+      user: newUser._id,
+      organization: organization._id,
+      role: 'Owner',
+    });
+
+    // 4. Set the user's current organization
+    newUser.currentOrganization = organization._id;
+    await newUser.save();
+
+    req.flash('success', 'Registration successful! Please log in.');
+    res.redirect('/auth/login');
+
   } catch (error) {
+    // If any step fails, attempt to clean up created documents
+    if (newUser) {
+      await User.findByIdAndDelete(newUser._id);
+      // Note: Also consider deleting the organization if it was created
+    }
+
     if (error.code === 11000) { // Duplicate key error
       if (error.keyPattern.username) {
         return res.status(409).send('Username already exists.');
@@ -22,11 +53,11 @@ router.post('/auth/register', async (req, res) => {
       }
       return res.status(409).send('Username or Email already exists.');
     }
-    console.error('Registration error:', error)
-    console.error(error.stack) // Logging the full error stack for better debugging
-    res.status(500).send(error.message)
+    console.error('Registration error:', error);
+    console.error(error.stack);
+    res.status(500).send(error.message);
   }
-})
+});
 
 router.get('/auth/login', (req, res) => {
   res.render('login', { csrfToken: req.csrfToken() })
@@ -42,6 +73,7 @@ router.post('/auth/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password)
     if (isMatch) {
       req.session.userId = user._id
+      req.session.currentOrganizationId = user.currentOrganization; // Store current org in session
       console.log(`User ${username} logged in successfully. Session ID: ${req.sessionID}`) // Logging the successful login and session ID
       return res.redirect('/')
     } else {
