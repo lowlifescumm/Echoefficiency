@@ -27,14 +27,20 @@ On the configuration screen, fill in the following details:
 *   **Start Command**: `node server.js`
 *   **Instance Type**: The **Free** plan is a good starting point.
 
-## 5. Add a Database (Optional, but Recommended)
+## 5. Add a Database & Redis
 
-This application requires a MongoDB database. You have two main options:
+This application requires both a MongoDB database and a Redis instance for background jobs.
+
+### MongoDB Setup
+You have two main options:
 
 *   **Use Render's MongoDB**: You can create a new MongoDB instance directly on Render. It's easy to set up and will be in the same region as your web service.
 *   **Use MongoDB Atlas**: If you prefer, you can use a free-tier database from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
 
 Once you have your database, you will get a **connection string** (URL). You'll need this for the environment variables.
+
+### Redis Setup
+From the Render dashboard, click **New +** and select **Redis**. Create a new Redis instance. The free tier is sufficient to start. Once created, Render will provide you with a **Redis URL**.
 
 ## 6. Add Environment Variables
 
@@ -45,6 +51,7 @@ This is the most important step. In the **Environment** section of your web serv
 *   `STRIPE_PUBLIC_KEY`: Your "Publishable key" from the [Stripe Dashboard](https://dashboard.stripe.com/apikeys).
 *   `STRIPE_SECRET_KEY`: Your "Secret key" from the [Stripe Dashboard](https://dashboard.stripe.com/apikeys).
 *   `STRIPE_PRICE_ID`: The ID of the subscription **Price** in Stripe. You can find this in your Stripe Dashboard. Go to the Product, and under the "Pricing" section, you will find the Price ID (it starts with `price_`).
+*   `REDIS_URL`: The connection URL for your Redis instance from the Render dashboard.
 
 ### Email Configuration (Optional)
 
