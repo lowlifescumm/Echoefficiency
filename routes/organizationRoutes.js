@@ -4,6 +4,7 @@ const { isAuthenticated } = require('./middleware/authMiddleware');
 const { hasPermission } = require('./middleware/rbacMiddleware');
 const Membership = require('../models/Membership');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 
 // @route   GET /organization/manage
 // @desc    Display the organization management page with a list of members
@@ -90,6 +91,27 @@ router.post('/member/:membershipId/remove', isAuthenticated, hasPermission('mana
         console.error('Error removing member:', error);
         req.flash('error', 'An error occurred while removing the member.');
         res.redirect('/organization/manage');
+    }
+});
+
+// @route   GET /organization/audit-log
+// @desc    Display the audit log for the organization
+// @access  Private (Owner)
+router.get('/audit-log', isAuthenticated, hasPermission('manage_organization_settings'), async (req, res) => {
+    try {
+        const logs = await AuditLog.find({
+            organization: req.session.currentOrganizationId,
+        })
+        .populate('user', 'username')
+        .sort({ timestamp: -1 });
+
+        res.render('audit-log', {
+            logs: logs,
+            csrfToken: res.locals.csrfToken,
+        });
+    } catch (error) {
+        console.error('Error fetching audit logs:', error);
+        res.status(500).send('Error loading audit log page.');
     }
 });
 

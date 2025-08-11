@@ -4,6 +4,7 @@ const FeedbackForm = require('../models/FeedbackForm')
 const FeedbackSubmission = require('../models/FeedbackSubmission')
 const { isAuthenticated } = require('./middleware/authMiddleware')
 const { hasPermission } = require('./middleware/rbacMiddleware')
+const AuditLog = require('../models/AuditLog');
 
 router.post('/create-form', isAuthenticated, hasPermission('create_form'), async (req, res) => {
   try {
@@ -175,5 +176,55 @@ router.post('/submit-feedback', async (req, res) => {
     res.status(500).json({ message: 'Error submitting feedback.', error })
   }
 })
+
+const { createObjectCsvStringifier } = require('csv-writer');
+
+// @route   GET /form/:formId/export/csv
+// @desc    Export form submissions as a CSV file
+// @access  Private (Analyst/Admin/Owner)
+router.get('/form/:formId/export/csv', isAuthenticated, hasPermission('export_data'), async (req, res) => {
+    try {
+        const { formId } = req.params;
+        const submissions = await FeedbackSubmission.find({ formId }).lean();
+
+        if (submissions.length === 0) {
+            req.flash('error', 'No submissions to export for this form.');
+            return res.redirect(`/view-form/${formId}`);
+        }
+
+        // Dynamically create headers from the keys of the first submission's responses
+        const responseKeys = Object.keys(submissions[0].responses);
+        const headers = [
+            { id: 'submittedAt', title: 'Submitted At' },
+            ...responseKeys.map(key => ({ id: key, title: key })),
+        ];
+
+        const csvStringifier = createObjectCsvStringifier({ header: headers });
+
+        const records = submissions.map(sub => ({
+            submittedAt: sub.submittedAt.toISOString(),
+            ...sub.responses,
+        }));
+
+        const csvData = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
+
+        // Log the audit event
+        await AuditLog.create({
+            user: req.session.userId,
+            organization: req.session.currentOrganizationId,
+            action: 'export_csv',
+            details: { formId: formId }
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=export-${formId}.csv`);
+        res.send(csvData);
+
+    } catch (error) {
+        console.error('Error exporting CSV:', error);
+        req.flash('error', 'Failed to export submissions.');
+        res.redirect(`/view-form/${req.params.formId}`);
+    }
+});
 
 module.exports = router

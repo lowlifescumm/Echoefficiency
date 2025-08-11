@@ -23,6 +23,7 @@
                         <div class="float-right action-buttons">
                             <a href="/view-form/<%= form._id %>" class="btn btn-info btn-sm">View</a>
                             <a href="/edit-form/<%= form._id %>" class="btn btn-warning btn-sm">Edit</a>
+                            <a href="/form/<%= form._id %>/export/csv" class="btn btn-success btn-sm">Export CSV</a>
                             <% if (form.link) { %>
                                 <button onclick="copyToClipboard('<%= form.link %>')" class="btn btn-secondary btn-sm">Share</button>
                             <% } else { %>
