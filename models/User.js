@@ -10,6 +10,9 @@ const userSchema = new mongoose.Schema({
   currentOrganization: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization'
+  },
+  phoneNumber: {
+    type: String,
   }
 })
 

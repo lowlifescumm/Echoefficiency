@@ -7,6 +7,7 @@ const { hasPermission } = require('./middleware/rbacMiddleware')
 const AuditLog = require('../models/AuditLog');
 const WebhookEndpoint = require('../models/WebhookEndpoint');
 const WebhookDelivery = require('../models/WebhookDelivery');
+const User = require('../models/User');
 
 
 router.post('/create-form', isAuthenticated, hasPermission('create_form'), async (req, res) => {
@@ -207,6 +208,22 @@ router.post('/submit-feedback', async (req, res) => {
         console.error('Error triggering webhooks:', webhookError);
     }
     // -----------------------------
+
+    // --- Trigger SMS Notification ---
+    try {
+        const formOwner = await User.findById(formExists.ownerId);
+        if (formOwner && formOwner.phoneNumber) {
+            const smsQueue = getQueue('sms');
+            await smsQueue.add('send_sms_notification', {
+                to: formOwner.phoneNumber,
+                body: `You have a new response for your form: "${formExists.title}"`
+            });
+            console.log(`Enqueued SMS notification for form owner: ${formOwner.username}`);
+        }
+    } catch (smsError) {
+        console.error('Error triggering SMS notification:', smsError);
+    }
+    // --------------------------
 
     res.json({ message: 'Feedback submitted successfully.' })
   } catch (error) {

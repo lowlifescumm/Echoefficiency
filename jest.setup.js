@@ -19,6 +19,10 @@ beforeAll(async () => {
   const redisUri = `redis://${host}:${port}`;
   // Set the REDIS_URL for the queue service to use
   process.env.REDIS_URL = redisUri;
+
+  // Set dummy credentials for services that check for them
+  process.env.TWILIO_ACCOUNT_SID = 'AC_dummy_sid';
+  process.env.TWILIO_AUTH_TOKEN = 'dummy_auth_token';
 });
 
 afterAll(async () => {

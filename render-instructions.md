@@ -63,6 +63,14 @@ The following variables are for sending password reset emails. If you do not con
 *   `EMAIL_PASS`: Your SMTP password.
 *   `EMAIL_FROM`: The "From" address for sending emails (e.g., `noreply@yourdomain.com`).
 
+### Twilio Configuration (Optional)
+
+These variables are for sending SMS notifications. If you do not provide them, SMS features will be disabled. You can get these from your [Twilio Console](https://www.twilio.com/console).
+
+*   `TWILIO_ACCOUNT_SID`: Your Twilio Account SID.
+*   `TWILIO_AUTH_TOKEN`: Your Twilio Auth Token.
+*   `TWILIO_PHONE_NUMBER`: A phone number you have purchased or verified in Twilio.
+
 **Important**: Do not share your `SESSION_SECRET` or `STRIPE_SECRET_KEY` with anyone.
 
 ## 7. Create the Web Service
