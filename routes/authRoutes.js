@@ -9,6 +9,7 @@ router.get('/auth/register', (req, res) => {
 
 const Organization = require('../models/Organization');
 const Membership = require('../models/Membership');
+const { getQueue } = require('../services/queueService');
 
 router.post('/auth/register', async (req, res) => {
   let newUser;
@@ -34,6 +35,19 @@ router.post('/auth/register', async (req, res) => {
     // 4. Set the user's current organization
     newUser.currentOrganization = organization._id;
     await newUser.save();
+
+    // 5. Enqueue a welcome email job
+    try {
+        const emailQueue = getQueue('emails');
+        await emailQueue.add('send_welcome_email', {
+            email: newUser.email,
+            username: newUser.username,
+        });
+        console.log(`Enqueued welcome email for ${newUser.email}`);
+    } catch (queueError) {
+        // Non-critical error, just log it
+        console.error('Failed to enqueue welcome email job:', queueError);
+    }
 
     req.flash('success', 'Registration successful! Please log in.');
     res.redirect('/auth/login');
