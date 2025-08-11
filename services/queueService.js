@@ -17,6 +17,7 @@ const getConnection = () => {
 // Singleton function to get or create a queue instance
 const getQueue = (name) => {
   if (!queues[name]) {
+    console.log(`Creating new queue: ${name}`);
     queues[name] = new Queue(name, { connection: getConnection() });
   }
   return queues[name];

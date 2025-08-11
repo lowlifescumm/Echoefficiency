@@ -5,6 +5,9 @@ const FeedbackSubmission = require('../models/FeedbackSubmission')
 const { isAuthenticated } = require('./middleware/authMiddleware')
 const { hasPermission } = require('./middleware/rbacMiddleware')
 const AuditLog = require('../models/AuditLog');
+const WebhookEndpoint = require('../models/WebhookEndpoint');
+const WebhookDelivery = require('../models/WebhookDelivery');
+
 
 router.post('/create-form', isAuthenticated, hasPermission('create_form'), async (req, res) => {
   try {
@@ -169,6 +172,42 @@ router.post('/submit-feedback', async (req, res) => {
 
     await newSubmission.save()
     console.log('Feedback submitted successfully.')
+
+    // --- Trigger Webhook Event ---
+    try {
+        const topic = 'response.created';
+        const endpoints = await WebhookEndpoint.find({
+            organization: formExists.organization,
+            subscribed_topics: topic,
+            status: 'active',
+        });
+
+        const webhookQueue = getQueue('webhooks');
+
+        for (const endpoint of endpoints) {
+            const deliveryPayload = {
+                id: newSubmission._id,
+                formId: newSubmission.formId,
+                responses: newSubmission.responses,
+                submittedAt: newSubmission.submittedAt,
+            };
+
+            const delivery = await WebhookDelivery.create({
+                endpoint: endpoint._id,
+                organization: formExists.organization,
+                topic,
+                payload: deliveryPayload,
+            });
+
+            await webhookQueue.add('webhook_deliver', { deliveryId: delivery._id });
+        }
+        console.log(`Enqueued ${endpoints.length} webhook jobs for ${topic}.`);
+    } catch (webhookError) {
+        // We don't want to fail the main request if webhooks fail, so just log it.
+        console.error('Error triggering webhooks:', webhookError);
+    }
+    // -----------------------------
+
     res.json({ message: 'Feedback submitted successfully.' })
   } catch (error) {
     console.error('Error submitting feedback:', error)
