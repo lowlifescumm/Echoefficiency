@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('partials/_head.ejs') %>
+<body>
+<%- include('partials/_header.ejs') %>
+<main role="main" class="container mt-5">
+    <h2>My Exports</h2>
+    <p>Here is a list of your requested data exports.</p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Requested At</th>
+                <th>Form</th>
+                <th>Requested By</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% exports.forEach(exp => { %>
+                <tr>
+                    <td><%= new Date(exp.createdAt).toLocaleString() %></td>
+                    <td><%= exp.form ? exp.form.title : 'N/A' %></td>
+                    <td><%= exp.requestedBy ? exp.requestedBy.username : 'N/A' %></td>
+                    <td>
+                        <span class="badge
+                            <% if (exp.status === 'completed') { %> bg-success
+                            <% } else if (exp.status === 'failed') { %> bg-danger
+                            <% } else { %> bg-secondary <% } %>">
+                            <%= exp.status %>
+                        </span>
+                    </td>
+                    <td>
+                        <% if (exp.status === 'completed' && exp.filePath) { %>
+                            <a href="/organization/exports/download/<%= exp._id %>" class="btn btn-primary btn-sm">Download</a>
+                        <% } %>
+                    </td>
+                </tr>
+            <% }); %>
+            <% if (exports.length === 0) { %>
+                <tr>
+                    <td colspan="5" class="text-center">No exports requested yet.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</main>
+<%- include('partials/_footer.ejs') %>
+</body>
+</html>

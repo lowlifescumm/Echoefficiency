@@ -6,12 +6,12 @@ const Membership = require('../models/Membership');
 const FeedbackForm = require('../models/FeedbackForm');
 const FeedbackSubmission = require('../models/FeedbackSubmission');
 const AuditLog = require('../models/AuditLog');
+const processor = require('../services/jobProcessor');
+const { getQueue } = require('../services/queueService');
 
 describe('Audit Log and Export Routes', () => {
   let ownerAgent, analystAgent, viewerAgent;
-  let ownerUser, analystUser, viewerUser;
-  let testOrg;
-  let testForm;
+  let testOrg, testForm, analystUser;
 
   beforeEach(async () => {
     // Clean up
@@ -21,10 +21,12 @@ describe('Audit Log and Export Routes', () => {
     await FeedbackForm.deleteMany({});
     await FeedbackSubmission.deleteMany({});
     await AuditLog.deleteMany({});
+    const queue = getQueue('default');
+    await queue.drain();
 
     // 1. Create Owner
     await request(app).post('/auth/register').send({ username: 'owner', email: 'owner@test.com', password: 'password' });
-    ownerUser = await User.findOne({ email: 'owner@test.com' });
+    const ownerUser = await User.findOne({ email: 'owner@test.com' });
     testOrg = await Organization.findOne({ owner: ownerUser._id });
 
     // 2. Create Analyst
@@ -35,7 +37,7 @@ describe('Audit Log and Export Routes', () => {
 
     // 3. Create Viewer
     await request(app).post('/auth/register').send({ username: 'viewer', email: 'viewer@test.com', password: 'password' });
-    viewerUser = await User.findOne({ email: 'viewer@test.com' });
+    const viewerUser = await User.findOne({ email: 'viewer@test.com' });
     await Membership.create({ user: viewerUser._id, organization: testOrg._id, role: 'Viewer' });
     await User.findByIdAndUpdate(viewerUser._id, { currentOrganization: testOrg._id });
 
@@ -60,14 +62,23 @@ describe('Audit Log and Export Routes', () => {
     });
   });
 
-  describe('GET /form/:formId/export/csv', () => {
-    it('should allow an Analyst to export CSV and create an audit log', async () => {
-      const res = await analystAgent.get(`/form/${testForm._id}/export/csv`);
+  describe('POST /form/:formId/export', () => {
+    it('should forbid a Viewer from enqueuing an export', async () => {
+      const res = await viewerAgent.post(`/form/${testForm._id}/export`).send({});
+      expect(res.statusCode).toBe(403);
+    });
 
-      expect(res.statusCode).toBe(200);
-      expect(res.headers['content-type']).toContain('text/csv');
-      expect(res.text).toContain('Submitted At,Rating');
-      expect(res.text).toContain('5');
+    it('should allow an Analyst to enqueue an export and create an audit log after processing', async () => {
+      // Enqueue the job
+      const res = await analystAgent.post(`/form/${testForm._id}/export`).send({});
+      expect(res.statusCode).toBe(302); // Redirects
+
+      // Manually find the job and process it
+      const queue = getQueue('default');
+      const jobs = await queue.getJobs(['waiting']);
+      expect(jobs.length).toBe(1);
+      const job = jobs[0];
+      await processor(job);
 
       // Verify audit log was created
       const log = await AuditLog.findOne({ action: 'export_csv' });
@@ -76,23 +87,22 @@ describe('Audit Log and Export Routes', () => {
       expect(log.organization.toString()).toBe(testOrg._id.toString());
       expect(log.details.get('formId')).toBe(testForm._id.toString());
     });
-
-    it('should forbid a Viewer from exporting CSV', async () => {
-      const res = await viewerAgent.get(`/form/${testForm._id}/export/csv`);
-      expect(res.statusCode).toBe(403);
-    });
   });
 
   describe('GET /organization/audit-log', () => {
-    it('should allow an Owner to view the audit log page', async () => {
-      // First, perform an action to log
-      await analystAgent.get(`/form/${testForm._id}/export/csv`);
+    it('should allow an Owner to view the audit log page after an export', async () => {
+      // Enqueue and process a job to create a log
+      await analystAgent.post(`/form/${testForm._id}/export`).send({});
+      const queue = getQueue('default');
+      const jobs = await queue.getJobs(['waiting']);
+      await processor(jobs[0]);
 
+      // Now view the audit log page
       const res = await ownerAgent.get('/organization/audit-log');
       expect(res.statusCode).toBe(200);
       expect(res.text).toContain('Audit Log');
       expect(res.text).toContain('export_csv');
-      expect(res.text).toContain('analyst'); // The user who performed the action
+      expect(res.text).toContain('analyst');
     });
 
     it('should forbid an Analyst from viewing the audit log page', async () => {

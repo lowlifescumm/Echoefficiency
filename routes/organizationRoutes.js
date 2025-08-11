@@ -115,4 +115,63 @@ router.get('/audit-log', isAuthenticated, hasPermission('manage_organization_set
     }
 });
 
+const Export = require('../models/Export');
+const path = require('path');
+
+// @route   GET /organization/exports
+// @desc    Display a list of requested exports for the organization
+// @access  Private
+router.get('/exports', isAuthenticated, async (req, res) => {
+    try {
+        const exports = await Export.find({
+            organization: req.session.currentOrganizationId,
+        })
+        .populate('requestedBy', 'username')
+        .populate('form', 'title')
+        .sort({ createdAt: -1 });
+
+        res.render('exports', {
+            exports: exports,
+            csrfToken: res.locals.csrfToken,
+        });
+    } catch (error) {
+        console.error('Error fetching exports:', error);
+        res.status(500).send('Error loading exports page.');
+    }
+});
+
+// @route   GET /organization/exports/download/:exportId
+// @desc    Download a completed export file
+// @access  Private
+router.get('/exports/download/:exportId', isAuthenticated, async (req, res) => {
+    try {
+        const exportRecord = await Export.findOne({
+            _id: req.params.exportId,
+            organization: req.session.currentOrganizationId, // Ensure user can only access their org's exports
+        });
+
+        if (!exportRecord || exportRecord.status !== 'completed' || !exportRecord.filePath) {
+            req.flash('error', 'Export not found or not yet complete.');
+            return res.redirect('/organization/exports');
+        }
+
+        // The filePath is absolute, but for security, let's construct it
+        const safeFilePath = path.join(__dirname, '..', 'tmp', 'exports', path.basename(exportRecord.filePath));
+
+        res.download(safeFilePath, (err) => {
+            if (err) {
+                console.error('Error downloading file:', err);
+                req.flash('error', 'Could not download the file.');
+                res.redirect('/organization/exports');
+            }
+        });
+
+    } catch (error) {
+        console.error('Error downloading export:', error);
+        req.flash('error', 'An error occurred.');
+        res.redirect('/organization/exports');
+    }
+});
+
+
 module.exports = router;

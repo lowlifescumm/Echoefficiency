@@ -22,6 +22,18 @@ const connection = new IORedis(process.env.REDIS_URL, {
 
 const worker = new Worker('default', processor, { connection });
 
+worker.on('failed', async (job, err) => {
+  console.error(`Job #${job.id} failed with error: ${err.message}`);
+
+  // If this was an export job, update its status in our DB
+  if (job.name === 'export_generate' && job.data.exportId) {
+    await require('./models/Export').findByIdAndUpdate(job.data.exportId, {
+      status: 'failed',
+      error: err.message,
+    });
+  }
+});
+
 console.log('Worker listening for jobs...');
 
 // --- Graceful Shutdown ---

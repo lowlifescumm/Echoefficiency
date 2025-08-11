@@ -177,53 +177,54 @@ router.post('/submit-feedback', async (req, res) => {
   }
 })
 
-const { createObjectCsvStringifier } = require('csv-writer');
+const { getQueue } = require('../services/queueService');
+const Export = require('../models/Export');
+const { v4: uuidv4 } = require('uuid');
 
-// @route   GET /form/:formId/export/csv
-// @desc    Export form submissions as a CSV file
+// @route   POST /form/:formId/export
+// @desc    Enqueue a job to export form submissions as a CSV file
 // @access  Private (Analyst/Admin/Owner)
-router.get('/form/:formId/export/csv', isAuthenticated, hasPermission('export_data'), async (req, res) => {
+router.post('/form/:formId/export', isAuthenticated, hasPermission('export_data'), async (req, res) => {
     try {
         const { formId } = req.params;
-        const submissions = await FeedbackSubmission.find({ formId }).lean();
+        const { userId, currentOrganizationId } = req.session;
 
-        if (submissions.length === 0) {
-            req.flash('error', 'No submissions to export for this form.');
-            return res.redirect(`/view-form/${formId}`);
-        }
-
-        // Dynamically create headers from the keys of the first submission's responses
-        const responseKeys = Object.keys(submissions[0].responses);
-        const headers = [
-            { id: 'submittedAt', title: 'Submitted At' },
-            ...responseKeys.map(key => ({ id: key, title: key })),
-        ];
-
-        const csvStringifier = createObjectCsvStringifier({ header: headers });
-
-        const records = submissions.map(sub => ({
-            submittedAt: sub.submittedAt.toISOString(),
-            ...sub.responses,
-        }));
-
-        const csvData = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
-
-        // Log the audit event
-        await AuditLog.create({
-            user: req.session.userId,
-            organization: req.session.currentOrganizationId,
-            action: 'export_csv',
-            details: { formId: formId }
+        // 1. Create an Export record to track the job
+        const newExport = await Export.create({
+            requestedBy: userId,
+            organization: currentOrganizationId,
+            form: formId,
+            status: 'pending',
         });
 
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename=export-${formId}.csv`);
-        res.send(csvData);
+        // 2. Add job to the queue
+        const exportQueue = getQueue('default');
+        const idempotencyKey = uuidv4();
+
+        await exportQueue.add('export_generate',
+            {
+                exportId: newExport._id.toString(),
+                formId,
+                userId,
+                organizationId: currentOrganizationId,
+                idempotencyKey
+            },
+            {
+                attempts: 5, // As per spec (or similar)
+                backoff: {
+                    type: 'exponential',
+                    delay: 5000, // 5 seconds
+                },
+            }
+        );
+
+        req.flash('success', 'Your export has started. You will be notified when it is complete.');
+        res.redirect('/dashboard'); // Or redirect to a new /exports page later
 
     } catch (error) {
-        console.error('Error exporting CSV:', error);
-        req.flash('error', 'Failed to export submissions.');
-        res.redirect(`/view-form/${req.params.formId}`);
+        console.error('Error enqueuing export job:', error);
+        req.flash('error', 'Failed to start export.');
+        res.redirect('/dashboard');
     }
 });
 
