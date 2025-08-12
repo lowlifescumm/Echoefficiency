@@ -1,6 +1,7 @@
 require('dotenv').config()
 const mongoose = require('mongoose')
 const app = require('./app')
+const { initScheduler } = require('./services/jobScheduler');
 
 const port = process.env.PORT || 3000
 
@@ -13,7 +14,9 @@ if (!process.env.DATABASE_URL || !process.env.SESSION_SECRET || !process.env.STR
 mongoose
   .connect(process.env.DATABASE_URL)
   .then(() => {
-    console.log('Database connected successfully')
+    console.log('Database connected successfully');
+    // Initialize the job scheduler once the DB is connected
+    initScheduler();
   })
   .catch((err) => {
     console.error(`Database connection error: ${err.message}`)
