@@ -13,6 +13,7 @@ const passwordResetRoutes = require('./routes/passwordResetRoutes')
 const organizationRoutes = require('./routes/organizationRoutes')
 const webhookRoutes = require('./routes/webhookRoutes')
 const monitoringRoutes = require('./routes/monitoringRoutes')
+const surveyRoutes = require('./routes/surveyRoutes')
 const Membership = require('./models/Membership');
 
 const app = express()
@@ -163,6 +164,7 @@ app.use('/password', passwordResetRoutes)
 app.use('/organization', organizationRoutes)
 app.use('/webhooks', webhookRoutes)
 app.use('/monitoring', monitoringRoutes)
+app.use(surveyRoutes)
 
 app.get('/subscribe', (req, res) => {
   res.render('subscribe', { STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY })
