@@ -22,7 +22,18 @@ const initScheduler = async () => {
     }
   );
 
-  console.log('Job scheduler initialized. "purge_old_job_events" job scheduled.');
+  await maintenanceQueue.add(
+    'check_system_health',
+    {},
+    {
+      repeat: {
+        every: 300000, // Every 5 minutes (in milliseconds)
+      },
+      jobId: 'periodic-health-check',
+    }
+  );
+
+  console.log('Job scheduler initialized. "purge_old_job_events" and "check_system_health" jobs scheduled.');
 };
 
 module.exports = { initScheduler };

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/_head') %>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>System Monitoring</title>
+</head>
+<body>
+    <%- include('partials/_header', { session: session, userRole: userRole }) %>
+
+    <div class="container mt-5">
+        <h1>System Monitoring Dashboard</h1>
+        <p>Real-time and historical data on system performance and job queues.</p>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        Job Queue Status
+                    </div>
+                    <div class="card-body">
+                        <canvas id="queueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('queueChart').getContext('2d');
+            let queueChart;
+
+            async function fetchQueueData() {
+                try {
+                    const response = await fetch('/api/monitoring/queue-stats');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch queue stats');
+                    }
+                    const data = await response.json();
+
+                    const labels = Object.keys(data);
+                    const waiting = labels.map(label => data[label].waiting);
+                    const active = labels.map(label => data[label].active);
+                    const completed = labels.map(label => data[label].completed);
+                    const failed = labels.map(label => data[label].failed);
+
+                    if (queueChart) {
+                        queueChart.destroy();
+                    }
+
+                    queueChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Waiting',
+                                    data: waiting,
+                                    backgroundColor: 'rgba(255, 159, 64, 0.5)'
+                                },
+                                {
+                                    label: 'Active',
+                                    data: active,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                                },
+                                {
+                                    label: 'Completed',
+                                    data: completed,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                                },
+                                {
+                                    label: 'Failed',
+                                    data: failed,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true
+                                }
+                            },
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error fetching or rendering chart data:', error);
+                    // Optionally display an error message on the page
+                }
+            }
+
+            fetchQueueData();
+            // Refresh data every 10 seconds
+            setInterval(fetchQueueData, 10000);
+        });
+    </script>
+    <%- include('partials/_footer') %>
+</body>
+</html>

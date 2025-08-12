@@ -22,7 +22,8 @@ const roles = {
     'create_form',
     'edit_form',
     'delete_form',
-    'manage_members'
+    'manage_members',
+    'view_monitoring'
   ],
   Owner: [
     'view_dashboard',
@@ -32,7 +33,8 @@ const roles = {
     'edit_form',
     'delete_form',
     'manage_members',
-    'manage_organization_settings'
+    'manage_organization_settings',
+    'view_monitoring'
   ],
 };
 

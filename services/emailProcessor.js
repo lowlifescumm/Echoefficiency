@@ -1,16 +1,15 @@
 const sendEmail = require('../utils/sendEmail');
 const fs = require('fs/promises');
 const path = require('path');
+const ejs = require('ejs');
 
 const handleSendWelcomeEmail = async (job) => {
   const { email, username } = job.data;
   console.log(`Sending welcome email to ${email}`);
 
-  // In a real app, you'd use a more sophisticated templating engine.
-  // For now, we'll just read the file and replace a placeholder.
-  const templatePath = path.join(__dirname, '..', 'emails', 'welcome.html');
-  let html = await fs.readFile(templatePath, 'utf-8');
-  html = html.replace('{{username}}', username);
+  const templatePath = path.join(__dirname, '..', 'views', 'emails', 'welcome.html');
+  const template = await fs.readFile(templatePath, 'utf-8');
+  const html = ejs.render(template, { username });
 
   await sendEmail({
     to: email,
@@ -20,12 +19,31 @@ const handleSendWelcomeEmail = async (job) => {
   });
 };
 
+const handleSendSystemAlert = async (job) => {
+    const { recipient, subject, queueName, failedCount, threshold } = job.data;
+    console.log(`Sending system alert to ${recipient}`);
+
+    const templatePath = path.join(__dirname, '..', 'views', 'emails', 'system-alert.html');
+    const template = await fs.readFile(templatePath, 'utf-8');
+    const html = ejs.render(template, { queueName, failedCount, threshold });
+
+    await sendEmail({
+        to: recipient,
+        subject: subject,
+        html: html,
+        text: `System Alert: Queue "${queueName}" has ${failedCount} failed jobs, exceeding threshold of ${threshold}.`
+    });
+};
+
 const processor = async (job) => {
   console.log(`Processing email job #${job.id} with name ${job.name}`);
 
   switch (job.name) {
     case 'send_welcome_email':
       await handleSendWelcomeEmail(job);
+      break;
+    case 'send_system_alert':
+      await handleSendSystemAlert(job);
       break;
     default:
       console.log(`No handler for email job name: ${job.name}`);

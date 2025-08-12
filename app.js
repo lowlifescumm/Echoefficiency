@@ -10,6 +10,8 @@ const paymentRoutes = require('./routes/paymentRoutes')
 const passwordResetRoutes = require('./routes/passwordResetRoutes')
 const organizationRoutes = require('./routes/organizationRoutes')
 const webhookRoutes = require('./routes/webhookRoutes')
+const monitoringRoutes = require('./routes/monitoringRoutes')
+const Membership = require('./models/Membership');
 
 const app = express()
 
@@ -54,18 +56,31 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Middleware to make variables available to all views
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   if (process.env.NODE_ENV !== 'test') {
     res.locals.csrfToken = req.csrfToken()
   } else {
     // Mock CSRF token for tests
     res.locals.csrfToken = 'test-csrf-token'
   }
-  res.locals.successMsg = req.flash('success')
-  res.locals.errorMsg = req.flash('error')
-  res.locals.session = req.session
-  next()
-})
+  res.locals.successMsg = req.flash('success');
+  res.locals.errorMsg = req.flash('error');
+  res.locals.session = req.session;
+
+  // Add userRole to locals if authenticated
+  if (req.session.userId) {
+    try {
+      const membership = await Membership.findOne({ user: req.session.userId }).select('role');
+      if (membership) {
+        res.locals.userRole = membership.role;
+      }
+    } catch (error) {
+      console.error('Error fetching user role for views:', error);
+    }
+  }
+
+  next();
+});
 
 // Silence console logs in test environment
 if (process.env.NODE_ENV !== 'test') {
@@ -93,6 +108,7 @@ app.use(paymentRoutes)
 app.use('/password', passwordResetRoutes)
 app.use('/organization', organizationRoutes)
 app.use('/webhooks', webhookRoutes)
+app.use('/monitoring', monitoringRoutes)
 
 app.get('/subscribe', (req, res) => {
   res.render('subscribe', { STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY })

@@ -37,5 +37,6 @@ const closeConnections = async () => {
 
 module.exports = {
   getQueue,
+  getConnection,
   closeConnections,
 };

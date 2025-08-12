@@ -24,6 +24,11 @@
       <li class="nav-item">
         <a class="nav-link" href="/webhooks">Webhooks</a>
       </li>
+      <% if (userRole && (userRole === 'Owner' || userRole === 'Admin')) { %>
+      <li class="nav-item">
+        <a class="nav-link" href="/monitoring">Monitoring</a>
+      </li>
+      <% } %>
       <li class="nav-item">
         <a class="nav-link" href="/auth/logout">Logout</a>
       </li>
