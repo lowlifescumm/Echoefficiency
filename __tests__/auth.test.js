@@ -52,6 +52,15 @@ describe('Auth Routes', () => {
 
       expect(res.statusCode).toBe(409)
     })
+
+    it('should not register a user with a password less than 8 characters', async () => {
+        const res = await request(app)
+            .post('/auth/register')
+            .send({ username: 'shortpass', email: 'shortpass@example.com', password: '123' });
+
+        expect(res.statusCode).toBe(400);
+        expect(res.text).toContain('Password must be at least 8 characters long.');
+    });
   })
 
   // Test user login with multi-tenancy

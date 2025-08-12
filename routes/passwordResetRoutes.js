@@ -13,11 +13,12 @@ router.get('/forgot', (req, res) => {
 const User = require('../models/User');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
+const { authLimiter } = require('./middleware/rateLimitMiddleware');
 
 // @route   POST /password/forgot
 // @desc    Handle the forgot password form submission
 // @access  Public
-router.post('/forgot', async (req, res) => {
+router.post('/forgot', authLimiter, async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
 

@@ -82,7 +82,12 @@ if (process.env.NODE_ENV === 'test') {
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.DATABASE_URL })
+    store: MongoStore.create({ mongoUrl: process.env.DATABASE_URL }),
+    cookie: {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'lax',
+    },
   }
 }
 app.use(session(sessionConfig))

@@ -11,7 +11,7 @@
     "sms_worker": "node sms_worker.js",
     "maintenance_worker": "node maintenance_worker.js",
     "dev": "nodemon server.js",
-    "test": "jest",
+    "test": "DISABLE_RATE_LIMITING=true jest",
     "lint": "eslint .",
     "heroku-postbuild": "echo 'No postbuild steps specified.'"
   },
@@ -35,6 +35,7 @@
     "dotenv": "^16.4.1",
     "ejs": "^3.1.9",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.0.1",
     "express-session": "^1.18.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.7.0",

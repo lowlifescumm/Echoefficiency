@@ -6,11 +6,15 @@ const { closeConnections } = require('./services/queueService');
 let mongoServer;
 let redisServer;
 
+global.mongoServer;
+global.redisServer;
+
 beforeAll(async () => {
   // Start MongoDB memory server
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
+  global.mongoUri = mongoUri; // Make URI available to isolated tests
 
   // Start Redis memory server
   redisServer = await RedisMemoryServer.create();

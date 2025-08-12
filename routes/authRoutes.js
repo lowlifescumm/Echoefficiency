@@ -2,6 +2,7 @@ const express = require('express')
 const User = require('../models/User')
 const bcrypt = require('bcrypt')
 const router = express.Router()
+const { authLimiter } = require('./middleware/rateLimitMiddleware');
 
 router.get('/auth/register', (req, res) => {
   res.render('register', { csrfToken: req.csrfToken() })
@@ -11,10 +12,14 @@ const Organization = require('../models/Organization');
 const Membership = require('../models/Membership');
 const { getQueue } = require('../services/queueService');
 
-router.post('/auth/register', async (req, res) => {
+router.post('/auth/register', authLimiter, async (req, res) => {
   let newUser;
   try {
     const { username, email, password } = req.body;
+
+    if (!password || password.length < 8) {
+      return res.status(400).send('Password must be at least 8 characters long.');
+    }
 
     // 1. Create the user
     newUser = await User.create({ username, email, password });
@@ -77,7 +82,7 @@ router.get('/auth/login', (req, res) => {
   res.render('login', { csrfToken: req.csrfToken() })
 })
 
-router.post('/auth/login', async (req, res) => {
+router.post('/auth/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body
     const user = await User.findOne({ username })
