@@ -1,33 +1,49 @@
+// This function can be called from the onclick attribute in the EJS template
+function copyToClipboard(text) {
+    if (!navigator.clipboard) {
+        // Fallback for older browsers
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert('Form link copied to clipboard!');
+        } catch (err) {
+            console.error('Fallback: Could not copy text', err);
+        }
+        document.body.removeChild(textArea);
+        return;
+    }
+    navigator.clipboard.writeText(text).then(function() {
+        console.log('Form link copied to clipboard!');
+        alert('Form link copied to clipboard!');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+    });
+}
+
+// Attach event listener for the delete confirmation modal
+// We need to wait for the DOM to be fully loaded, especially if using jQuery.
 document.addEventListener('DOMContentLoaded', function () {
-  const deleteButtons = document.querySelectorAll('.btn-danger')
-  deleteButtons.forEach(button => {
-    button.addEventListener('click', function (event) {
-      const formId = this.getAttribute('data-form-id')
-      const csrfToken = this.getAttribute('data-csrf-token')
-      const formTitle = this.closest('.list-group-item').querySelector('.form-title').textContent
-      const modalTitle = document.querySelector('#deleteConfirmModal .modal-title')
-      const modalBody = document.querySelector('#deleteConfirmModal .modal-body')
-      const deleteFormAction = document.querySelector('#deleteConfirmModal form')
+    // Since jQuery is loaded on the page, we can use it.
+    // If we wanted to remove jQuery, this would need to be rewritten in vanilla JS.
+    if (window.jQuery) {
+        $('#deleteConfirmModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var formId = button.data('form-id');
+            var formTitle = button.data('form-title');
+            var csrfToken = button.data('csrf-token');
+            var modal = $(this);
+            modal.find('.modal-body #formTitleToDelete').text(formTitle);
+            modal.find('.modal-footer #deleteForm').attr('action', '/delete-form/' + formId);
+            modal.find('.modal-footer #deleteForm input[name="_csrf"]').val(csrfToken);
+        });
+    } else {
+        console.error('jQuery is not loaded. Modal script will not work.');
+    }
+});
 
-      modalTitle.textContent = 'Confirm Deletion'
-      modalBody.textContent = `Are you sure you want to delete the form "${formTitle}"?`
-      deleteFormAction.action = `/delete-form/${formId}`
-      deleteFormAction.querySelector('input[name="_csrf"]').value = csrfToken
-    })
-  })
-
-  // Clipboard copy functionality
-  const shareButtons = document.querySelectorAll('.share-btn')
-  shareButtons.forEach(button => {
-    button.addEventListener('click', function () {
-      const formLink = this.getAttribute('data-form-link')
-      if (formLink) {
-        navigator.clipboard.writeText(formLink).then(function () {
-          alert('Form link copied to clipboard!')
-        }, function (err) {
-          alert('Could not copy form link: ', err)
-        })
-      }
-    })
-  })
-})
+// Make the copy function globally available if it's not already
+window.copyToClipboard = copyToClipboard;

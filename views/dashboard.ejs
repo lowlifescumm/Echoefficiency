@@ -41,36 +41,6 @@
             <p>You have not created any feedback forms yet.</p>
         <% } %>
     </div>
-    <%- include('partials/_footer.ejs') %>
-    <script src="/js/dashboardScripts.js"></script>
-    <script>
-        function copyToClipboard(text) {
-            if (!navigator.clipboard) {
-                // Fallback for browsers that don't support the Clipboard API
-                var textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    var successful = document.execCommand('copy');
-                    var msg = successful ? 'successful' : 'unsuccessful';
-                    console.log('Fallback: Copying text command was ' + msg);
-                    alert('Form link copied to clipboard!');
-                } catch (err) {
-                    console.error('Fallback: Could not copy text', err);
-                }
-                document.body.removeChild(textArea);
-                return;
-            }
-            navigator.clipboard.writeText(text).then(function() {
-                console.log('Form link copied to clipboard!');
-                alert('Form link copied to clipboard!');
-            }, function(err) {
-                console.error('Could not copy text: ', err);
-            });
-        }
-    </script>
 
     <!-- Single Modal Structure for Deletion Confirmation -->
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -94,17 +64,14 @@
       </div>
     </div>
 
-    <script>
-        $('#deleteConfirmModal').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget) // Button that triggered the modal
-            var formId = button.data('form-id') // Extract info from data-* attributes
-            var formTitle = button.data('form-title')
-            var csrfToken = button.data('csrf-token')
-            var modal = $(this)
-            modal.find('.modal-body #formTitleToDelete').text(formTitle)
-            modal.find('.modal-footer #deleteForm').attr('action', '/delete-form/' + formId)
-            modal.find('.modal-footer #deleteForm input[name="_csrf"]').val(csrfToken)
-        })
+    <%- include('partials/_footer.ejs') %>
+    <script type="module">
+        import('/js/dashboardScripts.js').then(module => {
+            // The module is loaded. Functions are now available.
+            console.log('Dashboard scripts loaded dynamically.');
+        }).catch(err => {
+            console.error('Failed to load dashboard scripts:', err);
+        });
     </script>
 </body>
 </html>
