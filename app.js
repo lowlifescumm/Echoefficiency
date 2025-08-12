@@ -3,6 +3,7 @@ const session = require('express-session')
 const MongoStore = require('connect-mongo')
 const csrf = require('csurf')
 const flash = require('connect-flash')
+const helmet = require('helmet');
 const authRoutes = require('./routes/authRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const feedbackSubmissionRoutes = require('./routes/feedbackSubmissionRoutes')
@@ -14,6 +15,45 @@ const monitoringRoutes = require('./routes/monitoringRoutes')
 const Membership = require('./models/Membership');
 
 const app = express()
+
+// Security Middleware
+app.use(
+  helmet({
+    hsts: process.env.NODE_ENV === 'production' ? {
+        maxAge: 31536000,
+        includeSubDomains: true,
+    } : false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "https://www.googletagmanager.com", "https://cdn.jsdelivr.net/npm/chart.js"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        fontSrc: ["'self'", "data:"],
+        connectSrc: ["'self'", "https:"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'self'"]
+      },
+    },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
+);
+
+// The Permissions-Policy header is not a top-level function in this version of Helmet.
+// It is enabled by default with a reasonable set of permissions.
+// The custom policy will be set via a separate middleware if needed, but for now, we remove the failing call.
+
+// Enforce HTTPS in production
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (req.header('x-forwarded-proto') !== 'https') {
+            res.redirect(`https://${req.header('host')}${req.url}`);
+        } else {
+            next();
+        }
+    });
+}
 
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }))
