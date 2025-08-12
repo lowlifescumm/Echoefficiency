@@ -4,6 +4,9 @@ const FeedbackForm = require('../models/FeedbackForm')
 const FeedbackSubmission = require('../models/FeedbackSubmission')
 const { isAuthenticated } = require('./middleware/authMiddleware')
 const { hasPermission } = require('./middleware/rbacMiddleware')
+const { getConnection } = require('../services/queueService');
+const ejs = require('ejs');
+const path = require('path');
 const AuditLog = require('../models/AuditLog');
 const WebhookEndpoint = require('../models/WebhookEndpoint');
 const WebhookDelivery = require('../models/WebhookDelivery');
@@ -93,7 +96,13 @@ router.post('/update-form/:formId', isAuthenticated, hasPermission('edit_form'),
   try {
     const { title, questions } = req.body
     await FeedbackForm.findByIdAndUpdate(req.params.formId, { title, questions })
-    console.log('Feedback form updated successfully')
+
+    // Invalidate SSR cache
+    const redis = getConnection();
+    const cacheKey = `ssr-cache:form:${req.params.formId}`;
+    await redis.del(cacheKey);
+
+    console.log('Feedback form updated successfully and cache invalidated')
     res.redirect('/dashboard')
   } catch (error) {
     console.error('Error updating feedback form:', error)
@@ -131,19 +140,43 @@ router.get('/view-form/:formId', isAuthenticated, hasPermission('view_submission
 })
 
 router.get('/form/:formId', async (req, res) => {
+  const formId = req.params.formId;
+  const redis = getConnection();
+  const cacheKey = `ssr-cache:form:${formId}`;
+
   try {
-    const form = await FeedbackForm.findById(req.params.formId).lean()
-    if (!form) {
-      console.log('Feedback form not found.')
-      return res.status(404).send('Feedback form not found.')
+    // Check cache first
+    const cachedHtml = await redis.get(cacheKey);
+    if (cachedHtml) {
+      console.log(`Serving cached version for form ${formId}`);
+      res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+      res.setHeader('X-Cache-Status', 'HIT');
+      return res.send(cachedHtml);
     }
-    res.render('feedbackForm', { form })
+
+    // If not cached, fetch from DB and render
+    const form = await FeedbackForm.findById(formId).lean();
+    if (!form) {
+      console.log('Feedback form not found.');
+      return res.status(404).send('Feedback form not found.');
+    }
+
+    const templatePath = path.join(__dirname, '..', 'views', 'feedbackForm.ejs');
+    const html = await ejs.renderFile(templatePath, { form, csrfToken: '' });
+
+    // Store in cache for 5 minutes
+    await redis.set(cacheKey, html, 'EX', 300);
+    console.log(`Caching new version for form ${formId}`);
+
+    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+    res.setHeader('X-Cache-Status', 'MISS');
+    res.send(html);
   } catch (error) {
-    console.error('Error fetching feedback form:', error)
-    console.error(error.stack)
-    return res.status(500).send('Error displaying feedback form.')
+    console.error('Error fetching feedback form:', error);
+    console.error(error.stack);
+    return res.status(500).send('Error displaying feedback form.');
   }
-})
+});
 
 router.post('/submit-feedback', async (req, res) => {
   try {

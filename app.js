@@ -4,6 +4,7 @@ const MongoStore = require('connect-mongo')
 const csrf = require('csurf')
 const flash = require('connect-flash')
 const helmet = require('helmet');
+const compression = require('compression');
 const authRoutes = require('./routes/authRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const feedbackSubmissionRoutes = require('./routes/feedbackSubmissionRoutes')
@@ -43,6 +44,9 @@ app.use(
 // The Permissions-Policy header is not a top-level function in this version of Helmet.
 // It is enabled by default with a reasonable set of permissions.
 // The custom policy will be set via a separate middleware if needed, but for now, we remove the failing call.
+
+// Compress all responses
+app.use(compression());
 
 // Enforce HTTPS in production
 if (process.env.NODE_ENV === 'production') {
@@ -144,6 +148,11 @@ if (process.env.NODE_ENV !== 'test') {
     next()
   })
 }
+
+// Health check endpoint
+app.get('/healthz', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 // Routes
 app.use(authRoutes)
