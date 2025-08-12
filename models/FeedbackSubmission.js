@@ -17,6 +17,9 @@ const feedbackSubmissionSchema = new mongoose.Schema({
   }
 })
 
+// Add a composite index for faster querying of submissions for a specific form, sorted by date
+feedbackSubmissionSchema.index({ formId: 1, submittedAt: -1 });
+
 feedbackSubmissionSchema.pre('save', function (next) {
   console.log('Saving feedback submission for form ID:', this.formId)
   if (!this.responses || this.responses.size === 0) {

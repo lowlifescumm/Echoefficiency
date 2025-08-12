@@ -4,6 +4,19 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
 const Membership = require('../models/Membership');
+const { getQueue } = require('../services/queueService');
+
+// Mock the queue service to control job counts for caching test
+jest.mock('../services/queueService', () => {
+    const originalModule = jest.requireActual('../services/queueService');
+    const mockQueue = {
+        getJobCounts: jest.fn().mockResolvedValue({ waiting: 1, active: 1, completed: 1, failed: 1 }),
+    };
+    return {
+        ...originalModule,
+        getQueue: jest.fn().mockReturnValue(mockQueue),
+    };
+});
 
 describe('Monitoring Routes', () => {
     let adminAgent, viewerAgent;
@@ -34,11 +47,13 @@ describe('Monitoring Routes', () => {
 
         // Create and authenticate agents
         adminAgent = request.agent(app);
-        // ** THE FIX IS HERE ** Use username for login, not email
         await adminAgent.post('/auth/login').send({ username: 'monitoradmin', password: 'password123' });
 
         viewerAgent = request.agent(app);
         await viewerAgent.post('/auth/login').send({ username: 'monitorviewer', password: 'password123' });
+
+        // Reset mocks before each test
+        getQueue().getJobCounts.mockClear();
     });
 
     afterEach(async () => {
@@ -66,12 +81,13 @@ describe('Monitoring Routes', () => {
             expect(res.statusCode).toEqual(200);
             expect(res.body).toHaveProperty('default');
             expect(res.body).toHaveProperty('emails');
-            expect(res.body.default).toHaveProperty('waiting');
+            expect(res.body.default.waiting).toBe(1);
         });
 
         it('should be inaccessible by a Viewer', async () => {
             const res = await viewerAgent.get('/monitoring/api/queue-stats');
             expect(res.statusCode).toEqual(403);
         });
+
     });
 });

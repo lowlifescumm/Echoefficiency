@@ -41,6 +41,9 @@ const feedbackFormSchema = new mongoose.Schema({
   }
 })
 
+// Add a composite index for organization and creationDate for faster dashboard queries
+feedbackFormSchema.index({ organization: 1, creationDate: -1 });
+
 function arrayLimit (val) {
   return val.length > 0
 }
