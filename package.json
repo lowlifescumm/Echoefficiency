@@ -12,7 +12,9 @@
     "maintenance_worker": "node maintenance_worker.js",
     "dev": "nodemon server.js",
     "test": "DISABLE_RATE_LIMITING=true jest",
+    "test:ts": "jest __tests__/survey.test.ts",
     "lint": "eslint .",
+    "build": "tsc",
     "heroku-postbuild": "echo 'No postbuild steps specified.'"
   },
   "keywords": [],
@@ -49,6 +51,8 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.2.1",
     "eslint": "^8.57.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.32.0",
@@ -59,6 +63,9 @@
     "mongodb-memory-server": "^10.2.0",
     "nodemon": "^3.1.0",
     "redis-memory-server": "^0.12.1",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
+    "typescript": "^5.9.2",
+    "zod": "^4.0.17"
   }
 }
