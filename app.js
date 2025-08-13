@@ -28,8 +28,8 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "https://www.googletagmanager.com", "https://cdn.jsdelivr.net/npm/chart.js"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "https://www.googletagmanager.com", "https://cdn.jsdelivr.net/npm/chart.js", "https://cdn.jsdelivr.net", "https://code.jquery.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
         imgSrc: ["'self'", "data:", "blob:"],
         fontSrc: ["'self'", "data:"],
         connectSrc: ["'self'", "https:"],
