@@ -9,22 +9,16 @@
             <label for="title" class="form-label">Form Title</label>
             <input type="text" class="form-control" id="title" name="title" required>
         </div>
-        <div id="questionsContainer">
-            <div class="mb-3 question">
-                <label for="questionText1" class="form-label">Question Text</label>
-                <input type="text" class="form-control" id="questionText1" name="questions[0][questionText]" required>
-                <label for="questionType1" class="form-label">Question Type</label>
-                <select class="form-select" id="questionType1" name="questions[0][questionType]" required>
-                    <option value="text">Text</option>
-                    <option value="multipleChoice">Multiple Choice</option>
-                </select>
-                <button type="button" class="btn btn-danger removeQuestionBtn bokeh-button" onclick="removeQuestion(this)">Remove Question</button>
-            </div>
         </div>
-        <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3 bokeh-button" onclick="addQuestion()">Add Another Question</button>
+        <%- include('partials/_pageManager.ejs') %>
+        <div id="page-content-container" style="display: none;">
+            <div id="questionsContainer">
+                </div>
+            <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3 bokeh-button">Add Another Question</button>
+        </div>
         <button type="submit" class="btn btn-primary bokeh-button" style="background-color: #007bff;">Submit</button>
     </form>
 </div>
 
 <%- include('partials/_footer.ejs') %>
-<script src="/js/createForm.js"></script>
+<script src="/js/pageManager.js"></script>

@@ -10,19 +10,24 @@ global.mongoServer;
 global.redisServer;
 
 beforeAll(async () => {
-  // Start MongoDB memory server
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
-  global.mongoUri = mongoUri; // Make URI available to isolated tests
+    if (MongoMemoryServer) {
+        // Start MongoDB memory server
+        mongoServer = await MongoMemoryServer.create();
+        const mongoUri = mongoServer.getUri();
+        await mongoose.connect(mongoUri);
+        global.mongoUri = mongoUri; // Make URI available to isolated tests
+    }
 
-  // Start Redis memory server
-  redisServer = await RedisMemoryServer.create();
-  const host = await redisServer.getHost();
-  const port = await redisServer.getPort();
-  const redisUri = `redis://${host}:${port}`;
-  // Set the REDIS_URL for the queue service to use
-  process.env.REDIS_URL = redisUri;
+    if (RedisMemoryServer) {
+        // Start Redis memory server
+        redisServer = await RedisMemoryServer.create();
+        const host = await redisServer.getHost();
+        const port = await redisServer.getPort();
+        const redisUri = `redis://${host}:${port}`;
+        // Set the REDIS_URL for the queue service to use
+        process.env.REDIS_URL = redisUri;
+    }
+
 
   // Set dummy credentials for services that check for them
   process.env.TWILIO_ACCOUNT_SID = 'AC_dummy_sid';
@@ -30,9 +35,17 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Close all connections gracefully
-  await mongoose.disconnect();
-  await closeConnections();
-  await mongoServer.stop();
-  await redisServer.stop();
+    // Close all connections gracefully
+    if (mongoose.disconnect) {
+        await mongoose.disconnect();
+    }
+    if (closeConnections) {
+        await closeConnections();
+    }
+    if (mongoServer) {
+        await mongoServer.stop();
+    }
+    if (redisServer) {
+        await redisServer.stop();
+    }
 });

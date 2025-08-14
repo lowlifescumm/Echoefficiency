@@ -1,0 +1,167 @@
+class PageManager {
+    constructor() {
+        this.pages = [];
+        this.selectedPageIndex = -1;
+        this.pageContentContainer = document.getElementById('page-content-container');
+        this.questionsContainer = document.getElementById('questionsContainer');
+        this.pageList = document.getElementById('page-list');
+        this.addPageBtn = document.getElementById('add-page-btn');
+        this.renamePageBtn = document.getElementById('rename-page-btn');
+        this.deletePageBtn = document.getElementById('delete-page-btn');
+        this.addQuestionBtn = document.getElementById('addQuestionBtn');
+
+        this.addPageBtn.addEventListener('click', () => this.addPage());
+        this.renamePageBtn.addEventListener('click', () => this.renamePage());
+        this.deletePageBtn.addEventListener('click', () => this.deletePage());
+        this.pageList.addEventListener('click', (e) => this.handlePageSelection(e));
+        this.addQuestionBtn.addEventListener('click', () => this.addQuestion());
+        window.addEventListener('keydown', (e) => this.handleKeyPress(e));
+
+        this.loadFromLocalStorage();
+        this.render();
+    }
+
+    addPage() {
+        const pageName = `Page ${this.pages.length + 1}`;
+        this.pages.push({ name: pageName, questions: [] });
+        this.selectedPageIndex = this.pages.length - 1;
+        this.saveToLocalStorage();
+        this.render();
+    }
+
+    renamePage() {
+        if (this.selectedPageIndex === -1) return;
+        const newName = prompt('Enter new page name:', this.pages[this.selectedPageIndex].name);
+        if (newName) {
+            this.pages[this.selectedPageIndex].name = newName;
+            this.saveToLocalStorage();
+            this.render();
+        }
+    }
+
+    deletePage() {
+        if (this.selectedPageIndex === -1) return;
+        if (confirm('Are you sure you want to delete this page?')) {
+            this.pages.splice(this.selectedPageIndex, 1);
+            if(this.pages.length === 0){
+                this.selectedPageIndex = -1;
+            } else if (this.selectedPageIndex >= this.pages.length) {
+                this.selectedPageIndex = this.pages.length - 1;
+            }
+            this.saveToLocalStorage();
+            this.render();
+        }
+    }
+
+    handlePageSelection(e) {
+        if (e.target.closest('.page-item')) {
+            this.selectedPageIndex = parseInt(e.target.closest('.page-item').dataset.index);
+            this.render();
+        }
+    }
+
+    handleKeyPress(e) {
+        if (this.selectedPageIndex === -1) return;
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (this.selectedPageIndex > 0) {
+                const temp = this.pages[this.selectedPageIndex];
+                this.pages[this.selectedPageIndex] = this.pages[this.selectedPageIndex - 1];
+                this.pages[this.selectedPageIndex - 1] = temp;
+                this.selectedPageIndex--;
+                this.saveToLocalStorage();
+                this.render();
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (this.selectedPageIndex < this.pages.length - 1) {
+                const temp = this.pages[this.selectedPageIndex];
+                this.pages[this.selectedPageIndex] = this.pages[this.selectedPageIndex + 1];
+                this.pages[this.selectedPageIndex + 1] = temp;
+                this.selectedPageIndex++;
+                this.saveToLocalStorage();
+                this.render();
+            }
+        }
+    }
+
+    addQuestion() {
+        if (this.selectedPageIndex === -1) return;
+        const question = {
+            questionText: '',
+            questionType: 'text'
+        };
+        this.pages[this.selectedPageIndex].questions.push(question);
+        this.saveToLocalStorage();
+        this.renderQuestions();
+    }
+
+    removeQuestion(questionIndex) {
+        if (this.selectedPageIndex === -1) return;
+        this.pages[this.selectedPageIndex].questions.splice(questionIndex, 1);
+        this.saveToLocalStorage();
+        this.renderQuestions();
+    }
+
+    renderQuestions() {
+        this.questionsContainer.innerHTML = '';
+        if (this.selectedPageIndex === -1) return;
+
+        const questions = this.pages[this.selectedPageIndex].questions;
+        questions.forEach((question, index) => {
+            const questionHTML = `
+                <div class="mb-3 question" id="question${index + 1}">
+                    <label for="questionText${index + 1}" class="form-label">Question Text</label>
+                    <input type="text" class="form-control" id="questionText${index + 1}" name="questions[${index}][questionText]" value="${question.questionText}" required>
+                    <label for="questionType${index + 1}" class="form-label">Question Type</label>
+                    <select class="form-select" id="questionType${index + 1}" name="questions[${index}][questionType]" required>
+                        <option value="text" ${question.questionType === 'text' ? 'selected' : ''}>Text</option>
+                        <option value="multipleChoice" ${question.questionType === 'multipleChoice' ? 'selected' : ''}>Multiple Choice</option>
+                    </select>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="pageManager.removeQuestion(${index})">Remove Question</button>
+                </div>
+            `;
+            this.questionsContainer.insertAdjacentHTML('beforeend', questionHTML);
+        });
+    }
+
+    render() {
+        this.pageList.innerHTML = '';
+        this.pages.forEach((page, index) => {
+            const pageItem = document.createElement('li');
+            pageItem.className = `page-item ${index === this.selectedPageIndex ? 'active' : ''}`;
+            pageItem.dataset.index = index;
+            pageItem.innerHTML = `<span class="page-item-name">${page.name}</span>`;
+            this.pageList.appendChild(pageItem);
+        });
+
+        if (this.selectedPageIndex !== -1) {
+            this.pageContentContainer.style.display = 'block';
+            this.renderQuestions();
+        } else {
+            this.pageContentContainer.style.display = 'none';
+        }
+    }
+
+    saveToLocalStorage() {
+        localStorage.setItem('formPages', JSON.stringify(this.pages));
+    }
+
+    loadFromLocalStorage() {
+        const pages = localStorage.getItem('formPages');
+        if (pages) {
+            this.pages = JSON.parse(pages);
+            if (this.pages.length > 0) {
+                this.selectedPageIndex = 0;
+            }
+        }
+    }
+}
+
+let pageManager;
+document.addEventListener('DOMContentLoaded', () => {
+    pageManager = new PageManager();
+});
+
+module.exports = PageManager;
