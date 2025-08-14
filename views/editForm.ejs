@@ -5,6 +5,7 @@
     <title>Edit Feedback Form</title>
     <script src="/js/editForm.js"></script> <!-- Include the JavaScript file for handling dynamic question addition and removal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
+    <script src="/js/historyManager.js"></script>
 </head>
 <body>
     <%- include('partials/_header.ejs') %>
@@ -58,7 +59,9 @@
         const inspector = document.getElementById('inspector');
         const inspectorContent = document.getElementById('inspector-content');
         let selectedBlock = null;
+        const history = new HistoryManager();
 
+        history.addState(questionsContainer.innerHTML);
         new Sortable(questionsContainer, {
             animation: 150,
             handle: '.drag-handle',
@@ -68,7 +71,10 @@
             fallbackOnBody: true,
             swapThreshold: 0.65,
             forceFallback: true,
-            placeholderClass: 'sortable-placeholder'
+            placeholderClass: 'sortable-placeholder',
+            onEnd: () => {
+                history.addState(questionsContainer.innerHTML);
+            }
         });
 
         questionsContainer.addEventListener('click', (e) => {
@@ -196,6 +202,7 @@
         }
 
         function addBlock(html) {
+            history.addState(questionsContainer.innerHTML);
             questionsContainer.insertAdjacentHTML('beforeend', html);
         }
 
@@ -298,6 +305,7 @@
         }
 
         function removeBlock(button) {
+            history.addState(questionsContainer.innerHTML);
             const blockToRemove = button.parentElement;
             if (blockToRemove === selectedBlock) {
                 inspector.style.display = 'none';
@@ -305,6 +313,38 @@
             }
             blockToRemove.remove();
         }
+
+        inspector.addEventListener('focusin', (e) => {
+            if (e.target.matches('input, textarea')) {
+                history.addState(questionsContainer.innerHTML);
+            }
+        });
+
+        function undo() {
+            const previousState = history.undo();
+            if (previousState) {
+                questionsContainer.innerHTML = previousState;
+            }
+        }
+
+        function redo() {
+            const nextState = history.redo();
+            if (nextState) {
+                questionsContainer.innerHTML = nextState;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    redo();
+                }
+            }
+        });
     </script>
 </body>
 </html>

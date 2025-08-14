@@ -1,5 +1,8 @@
+const HistoryManager = require('./historyManager');
+
 class PageManager {
     constructor() {
+        this.history = new HistoryManager();
         this.pages = [];
         this.selectedPageIndex = -1;
         this.pageContentContainer = document.getElementById('page-content-container');
@@ -18,10 +21,12 @@ class PageManager {
         window.addEventListener('keydown', (e) => this.handleKeyPress(e));
 
         this.loadFromLocalStorage();
+        this.history.addState(JSON.parse(JSON.stringify(this.pages)));
         this.render();
     }
 
     addPage() {
+        this.history.addState(JSON.parse(JSON.stringify(this.pages)));
         const pageName = `Page ${this.pages.length + 1}`;
         this.pages.push({ name: pageName, questions: [] });
         this.selectedPageIndex = this.pages.length - 1;
@@ -33,6 +38,7 @@ class PageManager {
         if (this.selectedPageIndex === -1) return;
         const newName = prompt('Enter new page name:', this.pages[this.selectedPageIndex].name);
         if (newName) {
+            this.history.addState(JSON.parse(JSON.stringify(this.pages)));
             this.pages[this.selectedPageIndex].name = newName;
             this.saveToLocalStorage();
             this.render();
@@ -42,6 +48,7 @@ class PageManager {
     deletePage() {
         if (this.selectedPageIndex === -1) return;
         if (confirm('Are you sure you want to delete this page?')) {
+            this.history.addState(JSON.parse(JSON.stringify(this.pages)));
             this.pages.splice(this.selectedPageIndex, 1);
             if(this.pages.length === 0){
                 this.selectedPageIndex = -1;
@@ -61,33 +68,44 @@ class PageManager {
     }
 
     handleKeyPress(e) {
-        if (this.selectedPageIndex === -1) return;
-
-        if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (this.selectedPageIndex > 0) {
-                const temp = this.pages[this.selectedPageIndex];
-                this.pages[this.selectedPageIndex] = this.pages[this.selectedPageIndex - 1];
-                this.pages[this.selectedPageIndex - 1] = temp;
-                this.selectedPageIndex--;
-                this.saveToLocalStorage();
-                this.render();
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 'z') {
+                e.preventDefault();
+                this.undo();
+            } else if (e.key === 'y') {
+                e.preventDefault();
+                this.redo();
             }
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (this.selectedPageIndex < this.pages.length - 1) {
-                const temp = this.pages[this.selectedPageIndex];
-                this.pages[this.selectedPageIndex] = this.pages[this.selectedPageIndex + 1];
-                this.pages[this.selectedPageIndex + 1] = temp;
-                this.selectedPageIndex++;
-                this.saveToLocalStorage();
-                this.render();
+        } else if (this.selectedPageIndex !== -1) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (this.selectedPageIndex > 0) {
+                    this.history.addState(JSON.parse(JSON.stringify(this.pages)));
+                    const temp = this.pages[this.selectedPageIndex];
+                    this.pages[this.selectedPageIndex] = this.pages[this.selectedPageIndex - 1];
+                    this.pages[this.selectedPageIndex - 1] = temp;
+                    this.selectedPageIndex--;
+                    this.saveToLocalStorage();
+                    this.render();
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (this.selectedPageIndex < this.pages.length - 1) {
+                    this.history.addState(JSON.parse(JSON.stringify(this.pages)));
+                    const temp = this.pages[this.selectedPageIndex];
+                    this.pages[this.selectedPageIndex] = this.pages[this.selectedPageIndex + 1];
+                    this.pages[this.selectedPageIndex + 1] = temp;
+                    this.selectedPageIndex++;
+                    this.saveToLocalStorage();
+                    this.render();
+                }
             }
         }
     }
 
     addQuestion() {
         if (this.selectedPageIndex === -1) return;
+        this.history.addState(JSON.parse(JSON.stringify(this.pages)));
         const question = {
             questionText: '',
             questionType: 'text'
@@ -99,9 +117,28 @@ class PageManager {
 
     removeQuestion(questionIndex) {
         if (this.selectedPageIndex === -1) return;
+        this.history.addState(JSON.parse(JSON.stringify(this.pages)));
         this.pages[this.selectedPageIndex].questions.splice(questionIndex, 1);
         this.saveToLocalStorage();
         this.renderQuestions();
+    }
+
+    undo() {
+        const previousState = this.history.undo();
+        if (previousState) {
+            this.pages = previousState;
+            this.saveToLocalStorage();
+            this.render();
+        }
+    }
+
+    redo() {
+        const nextState = this.history.redo();
+        if (nextState) {
+            this.pages = nextState;
+            this.saveToLocalStorage();
+            this.render();
+        }
     }
 
     renderQuestions() {

@@ -1,3 +1,6 @@
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const { RedisMemoryServer } = require('redis-memory-server');
 const mongoose = require('mongoose');
