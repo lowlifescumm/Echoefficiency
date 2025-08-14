@@ -102,7 +102,7 @@ app.use(flash())
 
 // CSRF protection middleware
 if (process.env.NODE_ENV !== 'test') {
-  app.use(csrf())
+  app.use(csrf({ cookie: true }))
 }
 
 // Middleware to make variables available to all views
