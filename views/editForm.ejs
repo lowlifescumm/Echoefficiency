@@ -52,6 +52,7 @@
             <button type="button" id="addTextBlockBtn" class="btn btn-secondary mb-3" onclick="addTextBlock()">Add Text Block</button>
             <button type="button" id="addDividerBtn" class="btn btn-secondary mb-3" onclick="addDividerBlock()">Add Divider</button>
             <button type="button" id="validateBtn" class="btn btn-info mb-3">Validate</button>
+            <button type="button" id="publishBtn" class="btn btn-success mb-3">Publish</button>
             <button type="submit" class="btn btn-primary" style="background-color: #007bff;">Update Form</button>
         </form>
         <div id="errorContainer" class="alert alert-danger mt-3" style="display: none;">
@@ -60,6 +61,27 @@
         </div>
     </div>
     <%- include('partials/_footer.ejs') %>
+
+    <!-- Publish Modal -->
+    <div class="modal fade" id="publishModal" tabindex="-1" aria-labelledby="publishModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="publishModalLabel">Publish Survey</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This is the JSON snapshot of your survey. You can download it for your records.</p>
+                    <pre id="jsonSnapshot" style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.25rem;"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="downloadJsonBtn" class="btn btn-primary">Download JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const questionsContainer = document.getElementById('questionsContainer');
         const inspector = document.getElementById('inspector');
@@ -375,6 +397,7 @@
         }
 
         const validateBtn = document.getElementById('validateBtn');
+        const publishBtn = document.getElementById('publishBtn');
         const errorContainer = document.getElementById('errorContainer');
         const errorList = document.getElementById('errorList');
 
@@ -398,6 +421,26 @@
             }
         });
 
+        publishBtn.addEventListener('click', async () => {
+            const surveyData = serializeForm();
+            const response = await fetch('/api/surveys/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': '<%= csrfToken %>'
+                },
+                body: JSON.stringify(surveyData)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                errorContainer.style.display = 'none';
+                openPublishModal(surveyData);
+            } else {
+                displayErrors(result.errors);
+            }
+        });
+
         function displayErrors(errors) {
             errorContainer.style.display = 'block';
             errorList.innerHTML = '';
@@ -411,6 +454,13 @@
                 });
                 errorList.appendChild(li);
             });
+        }
+
+        function openPublishModal(surveyData) {
+            const jsonSnapshot = document.getElementById('jsonSnapshot');
+            jsonSnapshot.textContent = JSON.stringify(surveyData, null, 2);
+            const publishModal = new bootstrap.Modal(document.getElementById('publishModal'));
+            publishModal.show();
         }
 
         function jumpToError(path) {
@@ -459,6 +509,20 @@
                 }]
             };
         }
+
+        const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+        downloadJsonBtn.addEventListener('click', () => {
+            const jsonSnapshot = document.getElementById('jsonSnapshot').textContent;
+            const blob = new Blob([jsonSnapshot], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'survey.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
 
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
