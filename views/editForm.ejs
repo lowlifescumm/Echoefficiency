@@ -4,6 +4,7 @@
     <%- include('partials/_head.ejs') %>
     <title>Edit Feedback Form</title>
     <script src="/js/editForm.js"></script> <!-- Include the JavaScript file for handling dynamic question addition and removal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
 </head>
 <body>
     <%- include('partials/_header.ejs') %>
@@ -15,50 +16,178 @@
                 <label for="title" class="form-label">Form Title</label>
                 <input type="text" class="form-control" id="title" name="title" value="<%= form.title %>" required>
             </div>
+            <style>
+                .block {
+                    border: 1px solid #ccc;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    background-color: #f9f9f9;
+                }
+                .drag-handle {
+                    cursor: move;
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2 11h16v2H2zM2 7h16v2H2zM2 3h16v2H2zM2 15h16v2H2z"/></svg>');
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+                .sortable-placeholder {
+                    border: 2px dashed #ccc;
+                    background-color: #f0f0f0;
+                    height: 50px;
+                }
+            </style>
             <div id="questionsContainer">
                 <% form.questions.forEach((question, index) => { %>
-                    <div class="mb-3 question">
+                    <div class="mb-3 question block" data-id="<%= question._id || crypto.randomUUID() %>">
+                        <input type="hidden" name="blocks[][id]" value="<%= question._id || crypto.randomUUID() %>">
+                        <input type="hidden" name="blocks[][type]" value="question">
+                        <span class="drag-handle"></span>
                         <label for="questionText<%= index %>" class="form-label">Question <%= index + 1 %></label>
-                        <input type="text" class="form-control" id="questionText<%= index %>" name="questions[<%= index %>][questionText]" value="<%= question.questionText %>" required>
-                        <select class="form-select mt-2" name="questions[<%= index %>][questionType]" required>
+                        <input type="text" class="form-control" id="questionText<%= index %>" name="blocks[][questionText]" value="<%= question.questionText %>" required>
+                        <select class="form-select mt-2" name="blocks[][questionType]" required>
                             <option value="text" <%= question.questionType === 'text' ? 'selected' : '' %>>Text</option>
                             <option value="multipleChoice" <%= question.questionType === 'multipleChoice' ? 'selected' : '' %>>Multiple Choice</option>
                             <option value="checkbox" <%= question.questionType === 'checkbox' ? 'selected' : '' %>>Checkbox</option>
                             <option value="rating" <%= question.questionType === 'rating' ? 'selected' : '' %>>Rating</option>
                         </select>
-                        <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeQuestion(this)">Remove Question</button>
+                        <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
                     </div>
                 <% }); %>
             </div>
-            <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3" onclick="addQuestion()">Add Another Question</button>
+            <div id="inspector" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
+                <h4>Inspector</h4>
+                <div id="inspector-content"></div>
+            </div>
+            <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3" onclick="addQuestionBlock()">Add Question</button>
+            <button type="button" id="addTextBlockBtn" class="btn btn-secondary mb-3" onclick="addTextBlock()">Add Text Block</button>
+            <button type="button" id="addDividerBtn" class="btn btn-secondary mb-3" onclick="addDividerBlock()">Add Divider</button>
             <button type="submit" class="btn btn-primary" style="background-color: #007bff;">Update Form</button>
         </form>
     </div>
     <%- include('partials/_footer.ejs') %>
     <script>
-        // Function to dynamically add a new question to the form
-        function addQuestion() {
+        const questionsContainer = document.getElementById('questionsContainer');
+        const inspector = document.getElementById('inspector');
+        const inspectorContent = document.getElementById('inspector-content');
+        let selectedBlock = null;
+
+        new Sortable(questionsContainer, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            fallbackOnBody: true,
+            swapThreshold: 0.65,
+            forceFallback: true,
+            placeholderClass: 'sortable-placeholder'
+        });
+
+        questionsContainer.addEventListener('click', (e) => {
+            const block = e.target.closest('.block');
+            if (block) {
+                if (selectedBlock) {
+                    selectedBlock.classList.remove('selected');
+                }
+                block.classList.add('selected');
+                selectedBlock = block;
+                inspector.style.display = 'block';
+                renderInspector();
+            }
+        });
+
+        function renderInspector() {
+            if (!selectedBlock) return;
+            inspectorContent.innerHTML = '';
+
+            if (selectedBlock.classList.contains('text-block')) {
+                const textarea = selectedBlock.querySelector('textarea');
+                inspectorContent.innerHTML = `
+                    <div class="mb-3">
+                        <label for="inspector-text" class="form-label">Text</label>
+                        <textarea id="inspector-text" class="form-control" rows="3">${textarea.value}</textarea>
+                    </div>
+                `;
+                const inspectorTextarea = document.getElementById('inspector-text');
+                inspectorTextarea.addEventListener('input', (e) => {
+                    textarea.value = e.target.value;
+                });
+            } else if (selectedBlock.classList.contains('divider-block')) {
+                inspectorContent.innerHTML = 'No properties to edit for this block.';
+            } else if (selectedBlock.classList.contains('question')) {
+                const select = selectedBlock.querySelector('select');
+                inspectorContent.innerHTML = `
+                    <div class="mb-3">
+                        <label for="inspector-question-type" class="form-label">Question Type</label>
+                        <p id="inspector-question-type">${select.value}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function addBlock(html) {
+            questionsContainer.insertAdjacentHTML('beforeend', html);
+        }
+
+        function addQuestionBlock() {
             const questionIndex = document.querySelectorAll('.question').length;
-            const questionsContainer = document.getElementById('questionsContainer');
+            const id = crypto.randomUUID();
             const newQuestionHTML = `
-                <div class="mb-3 question">
+                <div class="mb-3 question block" data-id="${id}">
+                    <input type="hidden" name="blocks[][id]" value="${id}">
+                    <input type="hidden" name="blocks[][type]" value="question">
+                    <span class="drag-handle"></span>
                     <label for="questionText${questionIndex}" class="form-label">Question ${questionIndex + 1}</label>
-                    <input type="text" class="form-control" id="questionText${questionIndex}" name="questions[${questionIndex}][questionText]" required>
-                    <select class="form-select mt-2" name="questions[${questionIndex}][questionType]" required>
+                    <input type="text" class="form-control" id="questionText${questionIndex}" name="blocks[][questionText]" required>
+                    <select class="form-select mt-2" name="blocks[][questionType]" required>
                         <option value="text">Text</option>
                         <option value="multipleChoice">Multiple Choice</option>
                         <option value="checkbox">Checkbox</option>
                         <option value="rating">Rating</option>
                     </select>
-                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeQuestion(this)">Remove Question</button>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
                 </div>
             `;
-            questionsContainer.insertAdjacentHTML('beforeend', newQuestionHTML);
+            addBlock(newQuestionHTML);
         }
 
-        // Function to remove a question from the form
-        function removeQuestion(button) {
-            button.parentElement.remove();
+        function addTextBlock() {
+            const id = crypto.randomUUID();
+            const newTextBlockHTML = `
+                <div class="mb-3 text-block block" data-id="${id}">
+                    <input type="hidden" name="blocks[][id]" value="${id}">
+                    <input type="hidden" name="blocks[][type]" value="text">
+                    <span class="drag-handle"></span>
+                    <textarea class="form-control" name="blocks[][content]" rows="3" placeholder="Enter your text here..."></textarea>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
+                </div>
+            `;
+            addBlock(newTextBlockHTML);
+        }
+
+        function addDividerBlock() {
+            const id = crypto.randomUUID();
+            const newDividerBlockHTML = `
+                <div class="mb-3 divider-block block" data-id="${id}">
+                    <input type="hidden" name="blocks[][id]" value="${id}">
+                    <input type="hidden" name="blocks[][type]" value="divider">
+                    <span class="drag-handle"></span>
+                    <hr>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
+                </div>
+            `;
+            addBlock(newDividerBlockHTML);
+        }
+
+        function removeBlock(button) {
+            const blockToRemove = button.parentElement;
+            if (blockToRemove === selectedBlock) {
+                inspector.style.display = 'none';
+                selectedBlock = null;
+            }
+            blockToRemove.remove();
         }
     </script>
 </body>
