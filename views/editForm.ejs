@@ -6,6 +6,7 @@
     <script src="/js/editForm.js"></script> <!-- Include the JavaScript file for handling dynamic question addition and removal -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
     <script src="/js/historyManager.js"></script>
+    <script src="/js/idGenerator.js"></script>
 </head>
 <body>
     <%- include('partials/_header.ejs') %>
@@ -90,6 +91,30 @@
             }
         });
 
+        function updateBlockWarnings(block) {
+            const warningsContainer = block.querySelector('.warnings-container') || document.createElement('div');
+            warningsContainer.className = 'warnings-container';
+            warningsContainer.innerHTML = '';
+
+            const label = block.querySelector('.form-label')?.textContent;
+            if (!label) {
+                warningsContainer.innerHTML += '<span class="badge bg-danger ms-2">Missing Title</span>';
+            }
+
+            if (block.dataset.type === 'single-choice' || block.dataset.type === 'multiple-choice') {
+                const optionsContainer = block.querySelector('.options-container');
+                if (optionsContainer.children.length === 0) {
+                    warningsContainer.innerHTML += '<span class="badge bg-danger ms-2">Empty Options</span>';
+                }
+            }
+
+            if (warningsContainer.innerHTML) {
+                block.appendChild(warningsContainer);
+            } else if (warningsContainer.parentElement) {
+                warningsContainer.remove();
+            }
+        }
+
         function renderInspector() {
             if (!selectedBlock) return;
             inspectorContent.innerHTML = '';
@@ -132,6 +157,7 @@
                 document.getElementById('inspector-label').addEventListener('input', (e) => {
                     selectedBlock.querySelector('.form-label').textContent = e.target.value;
                     selectedBlock.querySelector('input[name="blocks[][label]"]').value = e.target.value;
+                    updateBlockWarnings(selectedBlock);
                 });
                 document.getElementById('inspector-help-text').addEventListener('input', (e) => {
                     selectedBlock.querySelector('.form-text').textContent = e.target.value;
@@ -181,6 +207,7 @@
             const optionsContainer = selectedBlock.querySelector('.options-container');
             optionsContainer.children[index].remove();
             renderInspector();
+            updateBlockWarnings(selectedBlock);
         }
 
         function addOption() {
@@ -199,15 +226,19 @@
             `;
             optionsContainer.insertAdjacentHTML('beforeend', newOptionHTML);
             renderInspector();
+            updateBlockWarnings(selectedBlock);
         }
 
         function addBlock(html) {
             history.addState(questionsContainer.innerHTML);
             questionsContainer.insertAdjacentHTML('beforeend', html);
+            const newBlock = questionsContainer.lastElementChild;
+            updateBlockWarnings(newBlock);
         }
 
         function addShortTextQuestionBlock() {
-            const id = crypto.randomUUID();
+            const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+            const id = generateUniqueId('short-text-question', existingIds);
             const html = `
                 <div class="mb-3 question short-text-question block" data-id="${id}" data-type="short-text">
                     <input type="hidden" name="blocks[][id]" value="${id}">
@@ -225,7 +256,8 @@
         }
 
         function addSingleChoiceQuestionBlock() {
-            const id = crypto.randomUUID();
+            const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+            const id = generateUniqueId('single-choice-question', existingIds);
             const html = `
                 <div class="mb-3 question single-choice-question block" data-id="${id}" data-type="single-choice">
                     <input type="hidden" name="blocks[][id]" value="${id}">
@@ -251,7 +283,8 @@
         }
 
         function addMultipleChoiceQuestionBlock() {
-            const id = crypto.randomUUID();
+            const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+            const id = generateUniqueId('multiple-choice-question', existingIds);
             const html = `
                 <div class="mb-3 question multiple-choice-question block" data-id="${id}" data-type="multiple-choice">
                     <input type="hidden" name="blocks[][id]" value="${id}">
@@ -277,7 +310,8 @@
         }
 
         function addTextBlock() {
-            const id = crypto.randomUUID();
+            const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+            const id = generateUniqueId('text-block', existingIds);
             const newTextBlockHTML = `
                 <div class="mb-3 text-block block" data-id="${id}">
                     <input type="hidden" name="blocks[][id]" value="${id}">
@@ -291,7 +325,8 @@
         }
 
         function addDividerBlock() {
-            const id = crypto.randomUUID();
+            const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+            const id = generateUniqueId('divider-block', existingIds);
             const newDividerBlockHTML = `
                 <div class="mb-3 divider-block block" data-id="${id}">
                     <input type="hidden" name="blocks[][id]" value="${id}">

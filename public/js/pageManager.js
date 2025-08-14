@@ -1,4 +1,5 @@
 const HistoryManager = require('./historyManager');
+const generateUniqueId = require('./idGenerator');
 
 class PageManager {
     constructor() {
@@ -27,8 +28,10 @@ class PageManager {
 
     addPage() {
         this.history.addState(JSON.parse(JSON.stringify(this.pages)));
+        const existingIds = this.pages.map(p => p.id);
         const pageName = `Page ${this.pages.length + 1}`;
-        this.pages.push({ name: pageName, questions: [] });
+        const id = generateUniqueId(pageName, existingIds);
+        this.pages.push({ id, name: pageName, questions: [] });
         this.selectedPageIndex = this.pages.length - 1;
         this.saveToLocalStorage();
         this.render();
@@ -37,7 +40,7 @@ class PageManager {
     renamePage() {
         if (this.selectedPageIndex === -1) return;
         const newName = prompt('Enter new page name:', this.pages[this.selectedPageIndex].name);
-        if (newName) {
+        if (newName !== null) {
             this.history.addState(JSON.parse(JSON.stringify(this.pages)));
             this.pages[this.selectedPageIndex].name = newName;
             this.saveToLocalStorage();
@@ -169,7 +172,11 @@ class PageManager {
             const pageItem = document.createElement('li');
             pageItem.className = `page-item ${index === this.selectedPageIndex ? 'active' : ''}`;
             pageItem.dataset.index = index;
-            pageItem.innerHTML = `<span class="page-item-name">${page.name}</span>`;
+            let warningHTML = '';
+            if (!page.name) {
+                warningHTML = '<span class="badge bg-danger ms-2">Missing Title</span>';
+            }
+            pageItem.innerHTML = `<span class="page-item-name">${page.name || 'Untitled Page'}</span> ${warningHTML}`;
             this.pageList.appendChild(pageItem);
         });
 
