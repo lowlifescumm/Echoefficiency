@@ -81,7 +81,7 @@ describe('Auth Routes', () => {
         .send({ username: 'testuser', password: 'password123' })
 
       expect(res.statusCode).toBe(302)
-      expect(res.headers.location).toBe('/')
+      expect(res.headers.location).toBe('/dashboard')
 
       // The agent now has the session cookie. A subsequent request should have the session.
       // We can't directly inspect the session, but we can infer its state by making another request.

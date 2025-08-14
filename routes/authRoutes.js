@@ -94,7 +94,7 @@ router.post('/auth/login', authLimiter, async (req, res) => {
       req.session.userId = user._id
       req.session.currentOrganizationId = user.currentOrganization; // Store current org in session
       console.log(`User ${username} logged in successfully. Session ID: ${req.sessionID}`) // Logging the successful login and session ID
-      return res.redirect('/')
+      return res.redirect('/dashboard')
     } else {
       return res.status(400).send('Password is incorrect')
     }
