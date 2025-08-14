@@ -19,6 +19,9 @@ const Membership = require('./models/Membership');
 
 const app = express()
 
+// Trust the first proxy
+app.set('trust proxy', 1);
+
 // Security Middleware
 app.use(
   helmet({
