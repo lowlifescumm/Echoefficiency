@@ -44,7 +44,22 @@
             </div>
             <div id="inspector" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
                 <h4>Inspector</h4>
-                <div id="inspector-content"></div>
+                <ul class="nav nav-tabs" id="inspectorTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">General</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="logic-tab" data-bs-toggle="tab" data-bs-target="#logic" type="button" role="tab" aria-controls="logic" aria-selected="false">Logic</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="inspectorTabContent">
+                    <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                        <div id="general-tab-content"></div>
+                    </div>
+                    <div class="tab-pane fade" id="logic" role="tabpanel" aria-labelledby="logic-tab">
+                        <div id="logic-tab-content"></div>
+                    </div>
+                </div>
             </div>
             <button type="button" class="btn btn-secondary mb-3" onclick="addShortTextQuestionBlock()">Add Short Text</button>
             <button type="button" class="btn btn-secondary mb-3" onclick="addSingleChoiceQuestionBlock()">Add Single Choice</button>
@@ -61,6 +76,7 @@
         </div>
     </div>
     <%- include('partials/_footer.ejs') %>
+    <%- include('partials/_ruleTemplate.ejs') %>
 
     <!-- Publish Modal -->
     <div class="modal fade" id="publishModal" tabindex="-1" aria-labelledby="publishModalLabel" aria-hidden="true">
@@ -85,7 +101,8 @@
     <script>
         const questionsContainer = document.getElementById('questionsContainer');
         const inspector = document.getElementById('inspector');
-        const inspectorContent = document.getElementById('inspector-content');
+        const generalTabContent = document.getElementById('general-tab-content');
+        const logicTabContent = document.getElementById('logic-tab-content');
         let selectedBlock = null;
         const history = new HistoryManager();
 
@@ -144,12 +161,13 @@
 
         function renderInspector() {
             if (!selectedBlock) return;
-            inspectorContent.innerHTML = '';
+            generalTabContent.innerHTML = '';
+            logicTabContent.innerHTML = '';
             const blockType = selectedBlock.dataset.type;
 
             if (blockType === 'text-block') {
                 const textarea = selectedBlock.querySelector('textarea');
-                inspectorContent.innerHTML = `
+                generalTabContent.innerHTML = `
                     <div class="mb-3">
                         <label for="inspector-text" class="form-label">Text</label>
                         <textarea id="inspector-text" class="form-control" rows="3">${textarea.value}</textarea>
@@ -219,6 +237,46 @@
                         <button type="button" class="btn btn-secondary mt-2" onclick="addOption()">Add Option</button>
                     `;
                 }
+
+                // Render Logic Tab
+                const logicTabContent = document.getElementById('logic-tab-content');
+                logicTabContent.innerHTML = `
+                    <div class="mb-3">
+                        <label for="logic-condition" class="form-label">Show this question if</label>
+                        <select id="logic-condition" class="form-select">
+                            <option value="AND">All</option>
+                            <option value="OR">Any</option>
+                        </select>
+                        <span>of the following match:</span>
+                    </div>
+                    <div id="rule-list"></div>
+                    <button type="button" id="add-rule-btn" class="btn btn-secondary mt-2">Add Rule</button>
+                `;
+
+                document.getElementById('add-rule-btn').addEventListener('click', addRule);
+                logicTabContent.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-rule-btn')) {
+                        removeRule(e.target.parentElement);
+                    }
+                });
+                logicTabContent.addEventListener('change', updateDisplayLogic);
+
+                // Data binding
+                const hiddenInput = selectedBlock.querySelector('input[name="blocks[][displayLogic]"]');
+                if (hiddenInput && hiddenInput.value) {
+                    const displayLogic = JSON.parse(hiddenInput.value);
+                    document.getElementById('logic-condition').value = displayLogic.condition;
+                    const ruleList = document.getElementById('rule-list');
+                    displayLogic.rules.forEach(ruleData => {
+                        const ruleTemplate = document.getElementById('rule-template');
+                        const newRule = ruleTemplate.content.cloneNode(true);
+                        populatePreviousQuestions(newRule.querySelector('[name="rule-question"]'));
+                        newRule.querySelector('[name="rule-question"]').value = ruleData.questionId;
+                        newRule.querySelector('[name="rule-operator"]').value = ruleData.operator;
+                        newRule.querySelector('[name="rule-value"]').value = ruleData.value;
+                        ruleList.appendChild(newRule);
+                    });
+                }
             }
         }
 
@@ -254,6 +312,60 @@
             optionsContainer.insertAdjacentHTML('beforeend', newOptionHTML);
             renderInspector();
             updateBlockWarnings(selectedBlock);
+        }
+
+        function addRule() {
+            const ruleTemplate = document.getElementById('rule-template');
+            const newRule = ruleTemplate.content.cloneNode(true);
+            const ruleList = document.getElementById('rule-list');
+            populatePreviousQuestions(newRule.querySelector('[name="rule-question"]'));
+            ruleList.appendChild(newRule);
+            updateDisplayLogic();
+        }
+
+        function removeRule(ruleElement) {
+            ruleElement.remove();
+            updateDisplayLogic();
+        }
+
+        function populatePreviousQuestions(selectElement) {
+            selectElement.innerHTML = '<option value="">Select a question...</option>';
+            const blocks = Array.from(questionsContainer.children);
+            const selectedIndex = blocks.indexOf(selectedBlock);
+            for (let i = 0; i < selectedIndex; i++) {
+                const block = blocks[i];
+                const label = block.querySelector('.form-label')?.textContent.trim();
+                if (label) {
+                    const option = document.createElement('option');
+                    option.value = block.dataset.id;
+                    option.textContent = label;
+                    selectElement.appendChild(option);
+                }
+            }
+        }
+
+        function updateDisplayLogic() {
+            const logicCondition = document.getElementById('logic-condition').value;
+            const ruleElements = document.querySelectorAll('#rule-list .rule');
+            const rules = Array.from(ruleElements).map(ruleEl => ({
+                questionId: ruleEl.querySelector('[name="rule-question"]').value,
+                operator: ruleEl.querySelector('[name="rule-operator"]').value,
+                value: ruleEl.querySelector('[name="rule-value"]').value,
+            }));
+
+            const displayLogic = {
+                condition: logicCondition,
+                rules: rules,
+            };
+
+            let hiddenInput = selectedBlock.querySelector('input[name="blocks[][displayLogic]"]');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'blocks[][displayLogic]';
+                selectedBlock.appendChild(hiddenInput);
+            }
+            hiddenInput.value = JSON.stringify(displayLogic);
         }
 
         function addBlock(html) {

@@ -1,0 +1,14 @@
+<template id="rule-template">
+    <div class="rule d-flex align-items-center mb-2">
+        <select class="form-select me-2" name="rule-question">
+            <option value="">Select a question...</option>
+        </select>
+        <select class="form-select me-2" name="rule-operator">
+            <option value="equals">equals</option>
+            <option value="not_equals">not equals</option>
+            <option value="contains">contains</option>
+        </select>
+        <input type="text" class="form-control me-2" name="rule-value" placeholder="Value">
+        <button type="button" class="btn btn-danger remove-rule-btn">Remove</button>
+    </div>
+</template>
