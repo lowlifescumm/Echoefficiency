@@ -51,8 +51,13 @@
             <button type="button" class="btn btn-secondary mb-3" onclick="addMultipleChoiceQuestionBlock()">Add Multiple Choice</button>
             <button type="button" id="addTextBlockBtn" class="btn btn-secondary mb-3" onclick="addTextBlock()">Add Text Block</button>
             <button type="button" id="addDividerBtn" class="btn btn-secondary mb-3" onclick="addDividerBlock()">Add Divider</button>
+            <button type="button" id="validateBtn" class="btn btn-info mb-3">Validate</button>
             <button type="submit" class="btn btn-primary" style="background-color: #007bff;">Update Form</button>
         </form>
+        <div id="errorContainer" class="alert alert-danger mt-3" style="display: none;">
+            <h5>Validation Errors:</h5>
+            <ul id="errorList"></ul>
+        </div>
     </div>
     <%- include('partials/_footer.ejs') %>
     <script>
@@ -120,7 +125,7 @@
             inspectorContent.innerHTML = '';
             const blockType = selectedBlock.dataset.type;
 
-            if (blockType === 'text') {
+            if (blockType === 'text-block') {
                 const textarea = selectedBlock.querySelector('textarea');
                 inspectorContent.innerHTML = `
                     <div class="mb-3">
@@ -134,7 +139,7 @@
                 });
             } else if (blockType === 'divider') {
                 inspectorContent.innerHTML = 'No properties to edit for this block.';
-            } else if (blockType === 'short-text' || blockType === 'single-choice' || blockType === 'multiple-choice') {
+            } else if (blockType === 'text' || blockType === 'multipleChoice' || blockType === 'checkbox' || blockType === 'rating') {
                 const label = selectedBlock.querySelector('.form-label').textContent;
                 const helpText = selectedBlock.querySelector('.form-text').textContent;
                 const isRequired = selectedBlock.querySelector('input[name="blocks[][required]"]')?.checked || false;
@@ -240,7 +245,7 @@
             const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
             const id = generateUniqueId('short-text-question', existingIds);
             const html = `
-                <div class="mb-3 question short-text-question block" data-id="${id}" data-type="short-text">
+                <div class="mb-3 question short-text-question block" data-id="${id}" data-type="text">
                     <input type="hidden" name="blocks[][id]" value="${id}">
                     <input type="hidden" name="blocks[][type]" value="short-text">
                     <input type="hidden" name="blocks[][label]" value="Short Text Question">
@@ -259,7 +264,7 @@
             const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
             const id = generateUniqueId('single-choice-question', existingIds);
             const html = `
-                <div class="mb-3 question single-choice-question block" data-id="${id}" data-type="single-choice">
+                <div class="mb-3 question single-choice-question block" data-id="${id}" data-type="multipleChoice">
                     <input type="hidden" name="blocks[][id]" value="${id}">
                     <input type="hidden" name="blocks[][type]" value="single-choice">
                     <input type="hidden" name="blocks[][label]" value="Single Choice Question">
@@ -286,7 +291,7 @@
             const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
             const id = generateUniqueId('multiple-choice-question', existingIds);
             const html = `
-                <div class="mb-3 question multiple-choice-question block" data-id="${id}" data-type="multiple-choice">
+                <div class="mb-3 question multiple-choice-question block" data-id="${id}" data-type="checkbox">
                     <input type="hidden" name="blocks[][id]" value="${id}">
                     <input type="hidden" name="blocks[][type]" value="multiple-choice">
                     <input type="hidden" name="blocks[][label]" value="Multiple Choice Question">
@@ -313,11 +318,11 @@
             const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
             const id = generateUniqueId('text-block', existingIds);
             const newTextBlockHTML = `
-                <div class="mb-3 text-block block" data-id="${id}">
+                <div class="mb-3 text-block block" data-id="${id}" data-type="text-block">
                     <input type="hidden" name="blocks[][id]" value="${id}">
-                    <input type="hidden" name="blocks[][type]" value="text">
+                    <input type="hidden" name="blocks[][type]" value="text-block">
                     <span class="drag-handle"></span>
-                    <textarea class="form-control" name="blocks[][content]" rows="3" placeholder="Enter your text here..."></textarea>
+                    <textarea class="form-control" name="blocks[][text]" rows="3" placeholder="Enter your text here..."></textarea>
                     <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
                 </div>
             `;
@@ -367,6 +372,92 @@
             if (nextState) {
                 questionsContainer.innerHTML = nextState;
             }
+        }
+
+        const validateBtn = document.getElementById('validateBtn');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorList = document.getElementById('errorList');
+
+        validateBtn.addEventListener('click', async () => {
+            const surveyData = serializeForm();
+            const response = await fetch('/api/surveys/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': '<%= csrfToken %>'
+                },
+                body: JSON.stringify(surveyData)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                errorContainer.style.display = 'none';
+                alert('Validation successful!');
+            } else {
+                displayErrors(result.errors);
+            }
+        });
+
+        function displayErrors(errors) {
+            errorContainer.style.display = 'block';
+            errorList.innerHTML = '';
+            errors.forEach(error => {
+                const li = document.createElement('li');
+                const path = error.path.join(' -> ');
+                li.textContent = `${path}: ${error.message}`;
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', () => {
+                    jumpToError(error.path);
+                });
+                errorList.appendChild(li);
+            });
+        }
+
+        function jumpToError(path) {
+            const questionIndex = path[3];
+            const blockId = serializeForm().pages[0].blocks[0].questions[questionIndex].id;
+            const blockEl = document.querySelector(`.block[data-id="${blockId}"]`);
+            if (blockEl) {
+                blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                blockEl.style.transition = 'background-color 0.5s';
+                blockEl.style.backgroundColor = '#f8d7da';
+                setTimeout(() => {
+                    blockEl.style.backgroundColor = '';
+                }, 2000);
+            }
+        }
+
+        function serializeForm() {
+            const title = document.getElementById('title').value;
+            const questions = Array.from(questionsContainer.children).map(blockEl => {
+                const question = {
+                    id: blockEl.dataset.id,
+                    type: blockEl.dataset.type,
+                    text: blockEl.querySelector('.form-label')?.textContent.trim(),
+                };
+                if (question.type === 'single-choice' || question.type === 'multiple-choice') {
+                    question.options = Array.from(blockEl.querySelectorAll('.options-container .form-check')).map(optionEl =>
+                        optionEl.querySelector('label').textContent.trim()
+                    );
+                }
+                return question;
+            });
+
+            // For simplicity, we'll put all blocks on a single page
+            return {
+                id: '<%= form._id %>',
+                title,
+                pages: [{
+                    id: 'page-1',
+                    title: 'Page 1',
+                    blocks: [
+                        {
+                            id: 'block-1',
+                            questions: questions
+                        }
+                    ]
+                }]
+            };
         }
 
         document.addEventListener('keydown', (e) => {
