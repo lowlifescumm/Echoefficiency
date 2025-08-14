@@ -39,28 +39,14 @@
                 }
             </style>
             <div id="questionsContainer">
-                <% form.questions.forEach((question, index) => { %>
-                    <div class="mb-3 question block" data-id="<%= question._id || crypto.randomUUID() %>">
-                        <input type="hidden" name="blocks[][id]" value="<%= question._id || crypto.randomUUID() %>">
-                        <input type="hidden" name="blocks[][type]" value="question">
-                        <span class="drag-handle"></span>
-                        <label for="questionText<%= index %>" class="form-label">Question <%= index + 1 %></label>
-                        <input type="text" class="form-control" id="questionText<%= index %>" name="blocks[][questionText]" value="<%= question.questionText %>" required>
-                        <select class="form-select mt-2" name="blocks[][questionType]" required>
-                            <option value="text" <%= question.questionType === 'text' ? 'selected' : '' %>>Text</option>
-                            <option value="multipleChoice" <%= question.questionType === 'multipleChoice' ? 'selected' : '' %>>Multiple Choice</option>
-                            <option value="checkbox" <%= question.questionType === 'checkbox' ? 'selected' : '' %>>Checkbox</option>
-                            <option value="rating" <%= question.questionType === 'rating' ? 'selected' : '' %>>Rating</option>
-                        </select>
-                        <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
-                    </div>
-                <% }); %>
             </div>
             <div id="inspector" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
                 <h4>Inspector</h4>
                 <div id="inspector-content"></div>
             </div>
-            <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3" onclick="addQuestionBlock()">Add Question</button>
+            <button type="button" class="btn btn-secondary mb-3" onclick="addShortTextQuestionBlock()">Add Short Text</button>
+            <button type="button" class="btn btn-secondary mb-3" onclick="addSingleChoiceQuestionBlock()">Add Single Choice</button>
+            <button type="button" class="btn btn-secondary mb-3" onclick="addMultipleChoiceQuestionBlock()">Add Multiple Choice</button>
             <button type="button" id="addTextBlockBtn" class="btn btn-secondary mb-3" onclick="addTextBlock()">Add Text Block</button>
             <button type="button" id="addDividerBtn" class="btn btn-secondary mb-3" onclick="addDividerBlock()">Add Divider</button>
             <button type="submit" class="btn btn-primary" style="background-color: #007bff;">Update Form</button>
@@ -101,8 +87,9 @@
         function renderInspector() {
             if (!selectedBlock) return;
             inspectorContent.innerHTML = '';
+            const blockType = selectedBlock.dataset.type;
 
-            if (selectedBlock.classList.contains('text-block')) {
+            if (blockType === 'text') {
                 const textarea = selectedBlock.querySelector('textarea');
                 inspectorContent.innerHTML = `
                     <div class="mb-3">
@@ -114,43 +101,172 @@
                 inspectorTextarea.addEventListener('input', (e) => {
                     textarea.value = e.target.value;
                 });
-            } else if (selectedBlock.classList.contains('divider-block')) {
+            } else if (blockType === 'divider') {
                 inspectorContent.innerHTML = 'No properties to edit for this block.';
-            } else if (selectedBlock.classList.contains('question')) {
-                const select = selectedBlock.querySelector('select');
+            } else if (blockType === 'short-text' || blockType === 'single-choice' || blockType === 'multiple-choice') {
+                const label = selectedBlock.querySelector('.form-label').textContent;
+                const helpText = selectedBlock.querySelector('.form-text').textContent;
+                const isRequired = selectedBlock.querySelector('input[name="blocks[][required]"]')?.checked || false;
+
                 inspectorContent.innerHTML = `
                     <div class="mb-3">
-                        <label for="inspector-question-type" class="form-label">Question Type</label>
-                        <p id="inspector-question-type">${select.value}</p>
+                        <label for="inspector-label" class="form-label">Label</label>
+                        <input type="text" id="inspector-label" class="form-control" value="${label}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="inspector-help-text" class="form-label">Help Text</label>
+                        <input type="text" id="inspector-help-text" class="form-control" value="${helpText}">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="inspector-required" ${isRequired ? 'checked' : ''}>
+                        <label class="form-check-label" for="inspector-required">Required</label>
                     </div>
                 `;
+
+                document.getElementById('inspector-label').addEventListener('input', (e) => {
+                    selectedBlock.querySelector('.form-label').textContent = e.target.value;
+                    selectedBlock.querySelector('input[name="blocks[][label]"]').value = e.target.value;
+                });
+                document.getElementById('inspector-help-text').addEventListener('input', (e) => {
+                    selectedBlock.querySelector('.form-text').textContent = e.target.value;
+                    selectedBlock.querySelector('input[name="blocks[][helpText]"]').value = e.target.value;
+                });
+                document.getElementById('inspector-required').addEventListener('change', (e) => {
+                    let requiredInput = selectedBlock.querySelector('input[name="blocks[][required]"]');
+                    if (!requiredInput) {
+                        requiredInput = document.createElement('input');
+                        requiredInput.type = 'hidden';
+                        requiredInput.name = 'blocks[][required]';
+                        selectedBlock.appendChild(requiredInput);
+                    }
+                    requiredInput.value = e.target.checked;
+                });
+
+                if (blockType === 'single-choice' || blockType === 'multiple-choice') {
+                    const optionsContainer = selectedBlock.querySelector('.options-container');
+                    const optionsHTML = Array.from(optionsContainer.children).map((option, index) => `
+                        <div class="d-flex mb-2">
+                            <input type="text" class="form-control" value="${option.querySelector('label').textContent.trim()}" oninput="updateOption(this, ${index})">
+                            <button type="button" class="btn btn-danger ms-2" onclick="removeOption(this, ${index})">Remove</button>
+                        </div>
+                    `).join('');
+
+                    inspectorContent.innerHTML += `
+                        <hr>
+                        <h5>Options</h5>
+                        <div id="inspector-options">
+                            ${optionsHTML}
+                        </div>
+                        <button type="button" class="btn btn-secondary mt-2" onclick="addOption()">Add Option</button>
+                    `;
+                }
             }
+        }
+
+        function updateOption(input, index) {
+            const optionsContainer = selectedBlock.querySelector('.options-container');
+            const optionLabel = optionsContainer.children[index].querySelector('label');
+            optionLabel.textContent = input.value;
+            const hiddenInput = optionsContainer.children[index].querySelector('input[type="hidden"]');
+            hiddenInput.value = input.value;
+        }
+
+        function removeOption(button, index) {
+            const optionsContainer = selectedBlock.querySelector('.options-container');
+            optionsContainer.children[index].remove();
+            renderInspector();
+        }
+
+        function addOption() {
+            const optionsContainer = selectedBlock.querySelector('.options-container');
+            const blockId = selectedBlock.dataset.id;
+            const optionIndex = optionsContainer.children.length;
+            const optionType = selectedBlock.dataset.type === 'single-choice' ? 'radio' : 'checkbox';
+            const newOptionHTML = `
+                <div class="form-check">
+                    <input type="hidden" name="blocks[][options][${optionIndex}][text]" value="New Option">
+                    <input class="form-check-input" type="${optionType}" name="${optionType}-${blockId}" id="${optionType}-${blockId}-${optionIndex + 1}">
+                    <label class="form-check-label" for="${optionType}-${blockId}-${optionIndex + 1}">
+                        New Option
+                    </label>
+                </div>
+            `;
+            optionsContainer.insertAdjacentHTML('beforeend', newOptionHTML);
+            renderInspector();
         }
 
         function addBlock(html) {
             questionsContainer.insertAdjacentHTML('beforeend', html);
         }
 
-        function addQuestionBlock() {
-            const questionIndex = document.querySelectorAll('.question').length;
+        function addShortTextQuestionBlock() {
             const id = crypto.randomUUID();
-            const newQuestionHTML = `
-                <div class="mb-3 question block" data-id="${id}">
+            const html = `
+                <div class="mb-3 question short-text-question block" data-id="${id}" data-type="short-text">
                     <input type="hidden" name="blocks[][id]" value="${id}">
-                    <input type="hidden" name="blocks[][type]" value="question">
+                    <input type="hidden" name="blocks[][type]" value="short-text">
+                    <input type="hidden" name="blocks[][label]" value="Short Text Question">
+                    <input type="hidden" name="blocks[][helpText]" value="Help text goes here.">
                     <span class="drag-handle"></span>
-                    <label for="questionText${questionIndex}" class="form-label">Question ${questionIndex + 1}</label>
-                    <input type="text" class="form-control" id="questionText${questionIndex}" name="blocks[][questionText]" required>
-                    <select class="form-select mt-2" name="blocks[][questionType]" required>
-                        <option value="text">Text</option>
-                        <option value="multipleChoice">Multiple Choice</option>
-                        <option value="checkbox">Checkbox</option>
-                        <option value="rating">Rating</option>
-                    </select>
+                    <label class="form-label">Short Text Question</label>
+                    <input type="text" class="form-control" placeholder="Short answer text">
+                    <small class="form-text text-muted">Help text goes here.</small>
                     <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
                 </div>
             `;
-            addBlock(newQuestionHTML);
+            addBlock(html);
+        }
+
+        function addSingleChoiceQuestionBlock() {
+            const id = crypto.randomUUID();
+            const html = `
+                <div class="mb-3 question single-choice-question block" data-id="${id}" data-type="single-choice">
+                    <input type="hidden" name="blocks[][id]" value="${id}">
+                    <input type="hidden" name="blocks[][type]" value="single-choice">
+                    <input type="hidden" name="blocks[][label]" value="Single Choice Question">
+                    <input type="hidden" name="blocks[][helpText]" value="Help text goes here.">
+                    <span class="drag-handle"></span>
+                    <label class="form-label">Single Choice Question</label>
+                    <div class="options-container">
+                        <div class="form-check">
+                            <input type="hidden" name="blocks[][options][0][text]" value="Option 1">
+                            <input class="form-check-input" type="radio" name="radio-${id}" id="radio-${id}-1">
+                            <label class="form-check-label" for="radio-${id}-1">
+                                Option 1
+                            </label>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Help text goes here.</small>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
+                </div>
+            `;
+            addBlock(html);
+        }
+
+        function addMultipleChoiceQuestionBlock() {
+            const id = crypto.randomUUID();
+            const html = `
+                <div class="mb-3 question multiple-choice-question block" data-id="${id}" data-type="multiple-choice">
+                    <input type="hidden" name="blocks[][id]" value="${id}">
+                    <input type="hidden" name="blocks[][type]" value="multiple-choice">
+                    <input type="hidden" name="blocks[][label]" value="Multiple Choice Question">
+                    <input type="hidden" name="blocks[][helpText]" value="Help text goes here.">
+                    <span class="drag-handle"></span>
+                    <label class="form-label">Multiple Choice Question</label>
+                    <div class="options-container">
+                        <div class="form-check">
+                            <input type="hidden" name="blocks[][options][0][text]" value="Option 1">
+                            <input class="form-check-input" type="checkbox" id="checkbox-${id}-1">
+                            <label class="form-check-label" for="checkbox-${id}-1">
+                                Option 1
+                            </label>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Help text goes here.</small>
+                    <button type="button" class="btn btn-danger removeQuestionBtn" onclick="removeBlock(this)">Remove</button>
+                </div>
+            `;
+            addBlock(html);
         }
 
         function addTextBlock() {
