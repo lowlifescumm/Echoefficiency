@@ -3,7 +3,8 @@ const session = require('express-session')
 const MongoStore = require('connect-mongo')
 const csrf = require('csurf')
 const flash = require('connect-flash')
-const helmet = require('helmet');
+const helmet = require('helmet')
+const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const authRoutes = require('./routes/authRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
@@ -99,6 +100,8 @@ app.use(session(sessionConfig))
 
 // Initialize flash middleware
 app.use(flash())
+
+app.use(cookieParser())
 
 // CSRF protection middleware
 if (process.env.NODE_ENV !== 'test') {
