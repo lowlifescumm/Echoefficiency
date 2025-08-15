@@ -8,6 +8,7 @@
     <script src="/js/historyManager.js"></script>
     <script src="/js/idGenerator.js"></script>
     <script src="/js/predicateEvaluator.js"></script>
+    <script src="/js/placeholderResolver.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js"></script>
 </head>
@@ -761,7 +762,7 @@
 
                 if (blockType === 'text-block') {
                     const content = blockEl.querySelector('textarea').value;
-                    blockHTML = `<p>${content}</p>`;
+                    blockHTML = `<p>${resolvePlaceholders(content, mockAnswers)}</p>`;
                 } else if (blockType === 'divider') {
                     blockHTML = '<hr>';
                 } else if (blockType === 'text' || blockType === 'multipleChoice' || blockType === 'checkbox') {
@@ -769,7 +770,7 @@
                     const helpText = blockEl.querySelector('.form-text').textContent;
                     const optionsContainer = blockEl.querySelector('.options-container');
 
-                    blockHTML = `<div class="mb-3"><h5>${label}</h5><small class="text-muted">${helpText}</small>`;
+                    blockHTML = `<div class="mb-3"><h5>${resolvePlaceholders(label, mockAnswers)}</h5><small class="text-muted">${resolvePlaceholders(helpText, mockAnswers)}</small>`;
                     if (optionsContainer) {
                         blockHTML += '<div class="mt-2">';
                         const options = Array.from(optionsContainer.children);
@@ -779,7 +780,7 @@
                             blockHTML += `
                                 <div class="form-check">
                                     <input class="form-check-input" type="${optionType}" disabled>
-                                    <label class="form-check-label">${optionLabel}</label>
+                                    <label class="form-check-label">${resolvePlaceholders(optionLabel, mockAnswers)}</label>
                                 </div>
                             `;
                         });
