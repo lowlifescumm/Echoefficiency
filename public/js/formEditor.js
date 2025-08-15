@@ -7,6 +7,7 @@ const compareSnapshots = require('./snapshotComparer');
 const evaluatePredicate = require('./predicateEvaluator');
 const resolvePlaceholders = require('./placeholderResolver');
 const ThemeManager = require('./themeManager');
+const { validateSurvey } = require('./compositeValidator');
 
 class FormEditor {
     constructor(formId, csrfToken) {
@@ -1132,17 +1133,9 @@ class FormEditor {
 
     async validateForm() {
         const surveyData = this.serializeForm();
-        const response = await fetch('/api/surveys/validate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-csrf-token': this.csrfToken
-            },
-            body: JSON.stringify(surveyData)
-        });
+        const result = validateSurvey(surveyData);
 
-        const result = await response.json();
-        if (response.ok) {
+        if (result.success) {
             document.getElementById('errorContainer').style.display = 'none';
             alert('Validation successful!');
         } else {
@@ -1152,39 +1145,57 @@ class FormEditor {
 
     async publishForm() {
         const surveyData = this.serializeForm();
-        const response = await fetch('/api/surveys/validate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-csrf-token': this.csrfToken
-            },
-            body: JSON.stringify(surveyData)
-        });
+        const result = validateSurvey(surveyData);
 
-        const result = await response.json();
-        if (response.ok) {
+        if (result.success) {
             document.getElementById('errorContainer').style.display = 'none';
             this.openPublishModal(surveyData);
+            if (result.warnings && result.warnings.length > 0) {
+                this.displayErrors([], result.warnings);
+            }
         } else {
             this.displayErrors(result.errors);
         }
     }
 
-    displayErrors(errors) {
+    displayErrors(errors, warnings = []) {
         const errorContainer = document.getElementById('errorContainer');
         const errorList = document.getElementById('errorList');
-        errorContainer.style.display = 'block';
+        const warningContainer = document.getElementById('warningContainer');
+        const warningList = document.getElementById('warningList');
+
+        errorContainer.style.display = 'none';
+        warningContainer.style.display = 'none';
         errorList.innerHTML = '';
-        errors.forEach(error => {
-            const li = document.createElement('li');
-            const path = error.path.join(' -> ');
-            li.textContent = `${path}: ${error.message}`;
-            li.style.cursor = 'pointer';
-            li.addEventListener('click', () => {
-                this.jumpToError(error.path);
+        warningList.innerHTML = '';
+
+        if (errors.length > 0) {
+            errorContainer.style.display = 'block';
+            errors.forEach(error => {
+                const li = document.createElement('li');
+                const path = error.path.join(' -> ');
+                li.textContent = `${path}: ${error.message}`;
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', () => {
+                    this.jumpToError(error.path);
+                });
+                errorList.appendChild(li);
             });
-            errorList.appendChild(li);
-        });
+        }
+
+        if (warnings.length > 0) {
+            warningContainer.style.display = 'block';
+            warnings.forEach(warning => {
+                const li = document.createElement('li');
+                const path = warning.path.join(' -> ');
+                li.textContent = `${path}: ${warning.message}`;
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', () => {
+                    this.jumpToError(warning.path);
+                });
+                warningList.appendChild(li);
+            });
+        }
     }
 
     jumpToError(path) {
