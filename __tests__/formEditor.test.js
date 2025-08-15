@@ -32,6 +32,8 @@ describe('FormEditor', () => {
                 <input id="theme-border-radius" value="5">
                 <input id="theme-font-family" value="Arial">
             </div>
+            <button id="translateBtn"></button>
+            <button id="exportCsvBtn"></button>
             <form id="editForm" action="/update-form/123">
                 <input type="hidden" name="_csrf" value="test-token">
             </form>

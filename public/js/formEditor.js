@@ -132,6 +132,12 @@ class FormEditor {
             document.getElementById('theme-border-radius').value = savedTheme.borderRadius;
             document.getElementById('theme-font-family').value = savedTheme.fontFamily;
         }
+
+        const translateBtn = document.getElementById('translateBtn');
+        translateBtn.addEventListener('click', () => this.openTranslationModal());
+
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        exportCsvBtn.addEventListener('click', () => this.exportStringsAsCsv());
     }
 
     updateBlockWarnings(block) {
@@ -1360,6 +1366,96 @@ class FormEditor {
         previewPane.style.setProperty('--ee-primary', theme.primaryColor);
         previewPane.style.setProperty('--ee-border-radius', `${theme.borderRadius}px`);
         previewPane.style.setProperty('--ee-font-family', theme.fontFamily);
+    }
+
+    openTranslationModal() {
+        const strings = this.extractStrings();
+        const tableBody = document.getElementById('translation-table-body');
+        tableBody.innerHTML = '';
+        for (const key in strings) {
+            const row = document.createElement('tr');
+            const en = strings[key].en || '';
+            const es = strings[key].es || '';
+            row.innerHTML = `
+                <td>${key}</td>
+                <td><input type="text" class="form-control" value="${en}"></td>
+                <td><input type="text" class="form-control" value="${es}"></td>
+            `;
+            if (!es) {
+                row.classList.add('table-danger');
+            }
+            tableBody.appendChild(row);
+        }
+        const translationModal = new bootstrap.Modal(document.getElementById('translationModal'));
+        translationModal.show();
+    }
+
+    exportStringsAsCsv() {
+        const strings = this.extractStrings();
+        let csvContent = "data:text/csv;charset=utf-8,key,en,es\n";
+        for (const key in strings) {
+            const en = strings[key].en || '';
+            const es = strings[key].es || '';
+            csvContent += `${key},"${en.replace(/"/g, '""')}","${es.replace(/"/g, '""')}"\n`;
+        }
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "translations.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    extractStrings() {
+        const strings = {};
+        const surveyData = this.serializeForm();
+
+        // Form title
+        strings['title'] = { en: surveyData.title, es: '' };
+
+        // Page titles
+        surveyData.pages.forEach((page, pageIndex) => {
+            strings[`page_${pageIndex}_title`] = { en: page.title, es: '' };
+        });
+
+        // Question labels, help text, and options
+        surveyData.pages.forEach((page, pageIndex) => {
+            page.blocks.forEach((block, blockIndex) => {
+                block.questions.forEach((question, questionIndex) => {
+                    const keyPrefix = `p${pageIndex}_b${blockIndex}_q${questionIndex}`;
+                    strings[`${keyPrefix}_label`] = { en: question.text, es: '' };
+                    if (question.helpText) {
+                        strings[`${keyPrefix}_helpText`] = { en: question.helpText, es: '' };
+                    }
+                    if (question.options) {
+                        question.options.forEach((option, optionIndex) => {
+                            strings[`${keyPrefix}_option${optionIndex}`] = { en: option.text, es: '' };
+                        });
+                    }
+                    if (question.rows) {
+                        question.rows.forEach((row, rowIndex) => {
+                            strings[`${keyPrefix}_row${rowIndex}`] = { en: row, es: '' };
+                        });
+                    }
+                    if (question.cols) {
+                        question.cols.forEach((col, colIndex) => {
+                            strings[`${keyPrefix}_col${colIndex}`] = { en: col, es: '' };
+                        });
+                    }
+                    if (question.items) {
+                        question.items.forEach((item, itemIndex) => {
+                            strings[`${keyPrefix}_item${itemIndex}`] = { en: item, es: '' };
+                        });
+                    }
+                    if (question.consentText) {
+                        strings[`${keyPrefix}_consentText`] = { en: question.consentText, es: '' };
+                    }
+                });
+            });
+        });
+
+        return strings;
     }
 }
 

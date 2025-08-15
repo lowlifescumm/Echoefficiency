@@ -94,6 +94,7 @@
                     <li><hr class="dropdown-divider"></li>
                 </ul>
             </div>
+            <button type="button" id="translateBtn" class="btn btn-warning mb-3">Translate</button>
             <button type="submit" class="btn btn-primary" style="background-color: #007bff;">Update Form</button>
         </form>
         <div id="errorContainer" class="alert alert-danger mt-3" style="display: none;">
@@ -164,6 +165,35 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Translation Modal -->
+    <div class="modal fade" id="translationModal" tabindex="-1" aria-labelledby="translationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="translationModalLabel">Translate Form</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>English</th>
+                                <th>Spanish</th>
+                            </tr>
+                        </thead>
+                        <tbody id="translation-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="exportCsvBtn" class="btn btn-primary">Export CSV</button>
                 </div>
             </div>
         </div>
