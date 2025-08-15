@@ -27,6 +27,11 @@ describe('FormEditor', () => {
             <select id="compare-with-select"></select>
             <div id="compare-results"></div>
             <input type="text" id="title" value="Test Form">
+            <div id="theme-editor-panel">
+                <input id="theme-primary-color" value="#000000">
+                <input id="theme-border-radius" value="5">
+                <input id="theme-font-family" value="Arial">
+            </div>
             <form id="editForm" action="/update-form/123">
                 <input type="hidden" name="_csrf" value="test-token">
             </form>

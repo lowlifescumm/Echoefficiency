@@ -6,6 +6,7 @@ const generateUniqueId = require('./idGenerator');
 const compareSnapshots = require('./snapshotComparer');
 const evaluatePredicate = require('./predicateEvaluator');
 const resolvePlaceholders = require('./placeholderResolver');
+const ThemeManager = require('./themeManager');
 
 class FormEditor {
     constructor(formId, csrfToken) {
@@ -19,6 +20,7 @@ class FormEditor {
         this.history = new HistoryManager();
         this.snapshotManager = new SnapshotManager();
         this.autosaveManager = new AutosaveManager(formId, new Date().toISOString());
+        this.themeManager = new ThemeManager();
 
         this.init();
     }
@@ -111,6 +113,25 @@ class FormEditor {
         });
 
         this.renderVersionsMenu();
+
+        const themeEditorPanel = document.getElementById('theme-editor-panel');
+        themeEditorPanel.addEventListener('input', (e) => {
+            const theme = {
+                primaryColor: document.getElementById('theme-primary-color').value,
+                borderRadius: document.getElementById('theme-border-radius').value,
+                fontFamily: document.getElementById('theme-font-family').value
+            };
+            this.applyTheme(theme);
+            this.themeManager.saveTheme(theme);
+        });
+
+        const savedTheme = this.themeManager.loadTheme();
+        if (savedTheme) {
+            this.applyTheme(savedTheme);
+            document.getElementById('theme-primary-color').value = savedTheme.primaryColor;
+            document.getElementById('theme-border-radius').value = savedTheme.borderRadius;
+            document.getElementById('theme-font-family').value = savedTheme.fontFamily;
+        }
     }
 
     updateBlockWarnings(block) {
@@ -1332,6 +1353,13 @@ class FormEditor {
         if (nextState) {
             this.questionsContainer.innerHTML = nextState;
         }
+    }
+
+    applyTheme(theme) {
+        const previewPane = document.getElementById('preview-pane');
+        previewPane.style.setProperty('--ee-primary', theme.primaryColor);
+        previewPane.style.setProperty('--ee-border-radius', `${theme.borderRadius}px`);
+        previewPane.style.setProperty('--ee-font-family', theme.fontFamily);
     }
 }
 
