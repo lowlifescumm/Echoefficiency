@@ -7,6 +7,7 @@
     <h2>Manage Organization</h2>
 
     <!-- Invite New Member Form -->
+    <% if (userRole === 'Admin' || userRole === 'Owner') { %>
     <div class="card mb-4">
         <div class="card-header">
             Invite New Member
@@ -33,6 +34,7 @@
             </form>
         </div>
     </div>
+    <% } %>
 
     <!-- Member List -->
     <h3>Members</h3>
@@ -51,6 +53,7 @@
                     <td><%= member.user.username %></td>
                     <td><%= member.user.email %></td>
                     <td>
+                        <% if (userRole === 'Admin' || userRole === 'Owner') { %>
                         <form action="/organization/member/<%= member._id %>/update-role" method="POST" class="d-inline">
                             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <select name="role" class="form-select" onchange="this.form.submit()">
@@ -63,9 +66,12 @@
                                 <% } %>
                             </select>
                         </form>
+                        <% } else { %>
+                            <%= member.role %>
+                        <% } %>
                     </td>
                     <td>
-                        <% if (member.role !== 'Owner') { %>
+                        <% if (userRole === 'Owner' && member.role !== 'Owner') { %>
                             <form action="/organization/member/<%= member._id %>/remove" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this member?');">
                                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                 <button type="submit" class="btn btn-danger btn-sm">Remove</button>
