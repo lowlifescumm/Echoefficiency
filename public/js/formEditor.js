@@ -346,6 +346,49 @@ class FormEditor {
             });
         }
 
+        if (blockType === 'file-upload') {
+            const allowedFileTypes = JSON.parse(this.selectedBlock.querySelector('input[name="blocks[][allowedFileTypes]"]').value);
+            const maxFileSize = this.selectedBlock.querySelector('input[name="blocks[][maxFileSize]"]').value;
+
+            this.generalTabContent.innerHTML += `
+                <hr>
+                <h5>File Upload Properties</h5>
+                <div class="mb-3">
+                    <label for="inspector-allowed-file-types" class="form-label">Allowed File Types (comma-separated)</label>
+                    <input type="text" id="inspector-allowed-file-types" class="form-control" value="${allowedFileTypes.join(',')}">
+                </div>
+                <div class="mb-3">
+                    <label for="inspector-max-file-size" class="form-label">Max File Size (MB)</label>
+                    <input type="number" id="inspector-max-file-size" class="form-control" value="${maxFileSize}">
+                </div>
+            `;
+
+            document.getElementById('inspector-allowed-file-types').addEventListener('input', (e) => {
+                this.selectedBlock.querySelector('input[name="blocks[][allowedFileTypes]"]').value = JSON.stringify(e.target.value.split(',').map(s => s.trim()));
+            });
+            document.getElementById('inspector-max-file-size').addEventListener('input', (e) => {
+                this.selectedBlock.querySelector('input[name="blocks[][maxFileSize]"]').value = e.target.value;
+            });
+        }
+
+        if (blockType === 'consent-checkbox') {
+            const consentText = this.selectedBlock.querySelector('input[name="blocks[][consentText]"]').value;
+
+            this.generalTabContent.innerHTML += `
+                <hr>
+                <h5>Consent Checkbox Properties</h5>
+                <div class="mb-3">
+                    <label for="inspector-consent-text" class="form-label">Consent Text</label>
+                    <textarea id="inspector-consent-text" class="form-control" rows="3">${consentText}</textarea>
+                </div>
+            `;
+
+            document.getElementById('inspector-consent-text').addEventListener('input', (e) => {
+                this.selectedBlock.querySelector('input[name="blocks[][consentText]"]').value = e.target.value;
+                this.selectedBlock.querySelector('.form-check-label').textContent = e.target.value;
+            });
+        }
+
             // Render Logic Tab
             this.logicTabContent.innerHTML = `
                 <div class="mb-3">
@@ -557,6 +600,67 @@ class FormEditor {
                 <label class="form-label">${blockData.label}</label>
                 <input type="text" class="form-control" placeholder="Short answer text">
                 <small class="form-text text-muted">${blockData.helpText}</small>
+                <button type="button" class="btn btn-danger removeQuestionBtn" onclick="formEditor.removeBlock(this)">Remove</button>
+            </div>
+        `;
+        this.addBlock(html, blockData);
+    }
+
+    addFileUploadQuestionBlock() {
+        const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+        const id = generateUniqueId('file-upload-question', existingIds);
+        const blockData = {
+            id,
+            type: 'file-upload',
+            label: 'File Upload Question',
+            helpText: 'Help text goes here.',
+            required: false,
+            allowedFileTypes: [],
+            maxFileSize: 10
+        };
+        const html = `
+            <div class="mb-3 question file-upload-question block" data-id="${id}" data-type="file-upload">
+                <input type="hidden" name="blocks[][id]" value="${id}">
+                <input type="hidden" name="blocks[][type]" value="file-upload">
+                <input type="hidden" name="blocks[][label]" value="${blockData.label}">
+                <input type="hidden" name="blocks[][helpText]" value="${blockData.helpText}">
+                <input type="hidden" name="blocks[][required]" value="${blockData.required}">
+                <input type="hidden" name="blocks[][allowedFileTypes]" value='${JSON.stringify(blockData.allowedFileTypes)}'>
+                <input type="hidden" name="blocks[][maxFileSize]" value="${blockData.maxFileSize}">
+                <span class="drag-handle"></span>
+                <label class="form-label">${blockData.label}</label>
+                <small class="form-text text-muted">${blockData.helpText}</small>
+                <button type="button" class="btn btn-danger removeQuestionBtn" onclick="formEditor.removeBlock(this)">Remove</button>
+            </div>
+        `;
+        this.addBlock(html, blockData);
+    }
+
+    addConsentCheckboxBlock() {
+        const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+        const id = generateUniqueId('consent-checkbox-block', existingIds);
+        const blockData = {
+            id,
+            type: 'consent-checkbox',
+            label: 'Consent Checkbox',
+            required: true,
+            consentText: 'I agree to the terms and conditions.'
+        };
+        const html = `
+            <div class="mb-3 consent-checkbox-block block" data-id="${id}" data-type="consent-checkbox">
+                <input type="hidden" name="blocks[][id]" value="${id}">
+                <input type="hidden" name="blocks[][type]" value="consent-checkbox">
+                <input type="hidden" name="blocks[][label]" value="${blockData.label}">
+                <input type="hidden" name="blocks[][required]" value="${blockData.required}">
+                <input type="hidden" name="blocks[][consentText]" value="${blockData.consentText}">
+                <span class="drag-handle"></span>
+                <label class="form-label">${blockData.label}</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="" id="consent-checkbox-${id}" disabled>
+                    <label class="form-check-label" for="consent-checkbox-${id}">
+                        ${blockData.consentText}
+                    </label>
+                </div>
                 <button type="button" class="btn btn-danger removeQuestionBtn" onclick="formEditor.removeBlock(this)">Remove</button>
             </div>
         `;
@@ -972,6 +1076,14 @@ class FormEditor {
                 const itemsValue = blockEl.querySelector('input[name="blocks[][items]"]').value;
                 question.items = (itemsValue && itemsValue.startsWith('[')) ? JSON.parse(itemsValue) : [];
             }
+            if (question.type === 'file-upload') {
+                const allowedFileTypesValue = blockEl.querySelector('input[name="blocks[][allowedFileTypes]"]').value;
+                question.allowedFileTypes = (allowedFileTypesValue && allowedFileTypesValue.startsWith('[')) ? JSON.parse(allowedFileTypesValue) : [];
+                question.maxFileSize = blockEl.querySelector('input[name="blocks[][maxFileSize]"]').value;
+            }
+            if (question.type === 'consent-checkbox') {
+                question.consentText = blockEl.querySelector('input[name="blocks[][consentText]"]').value;
+            }
             return question;
         });
 
@@ -1175,6 +1287,12 @@ class FormEditor {
                     break;
                 case 'ranking':
                     addBlockFn = this.addRankingQuestionBlock.bind(this);
+                    break;
+                case 'file-upload':
+                    addBlockFn = this.addFileUploadQuestionBlock.bind(this);
+                    break;
+                case 'consent-checkbox':
+                    addBlockFn = this.addConsentCheckboxBlock.bind(this);
                     break;
             }
             if (addBlockFn) {

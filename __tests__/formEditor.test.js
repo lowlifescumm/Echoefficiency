@@ -95,4 +95,35 @@ describe('FormEditor', () => {
         expect(question.type).toBe('ranking');
         expect(question.items).toEqual(['Item 1', 'Item 2']);
     });
+
+    test('should add a file upload question block', () => {
+        formEditor.addFileUploadQuestionBlock();
+        const block = formEditor.questionsContainer.querySelector('.file-upload-question');
+        expect(block).not.toBeNull();
+        expect(block.dataset.type).toBe('file-upload');
+    });
+
+    test('should add a consent checkbox block', () => {
+        formEditor.addConsentCheckboxBlock();
+        const block = formEditor.questionsContainer.querySelector('.consent-checkbox-block');
+        expect(block).not.toBeNull();
+        expect(block.dataset.type).toBe('consent-checkbox');
+    });
+
+    test('should serialize a file upload question', () => {
+        formEditor.addFileUploadQuestionBlock();
+        const surveyData = formEditor.serializeForm();
+        const question = surveyData.pages[0].blocks[0].questions[0];
+        expect(question.type).toBe('file-upload');
+        expect(question.allowedFileTypes).toEqual([]);
+        expect(question.maxFileSize).toBe('10');
+    });
+
+    test('should serialize a consent checkbox', () => {
+        formEditor.addConsentCheckboxBlock();
+        const surveyData = formEditor.serializeForm();
+        const question = surveyData.pages[0].blocks[0].questions[0];
+        expect(question.type).toBe('consent-checkbox');
+        expect(question.consentText).toBe('I agree to the terms and conditions.');
+    });
 });
