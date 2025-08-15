@@ -7,6 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
     <script src="/js/historyManager.js"></script>
     <script src="/js/idGenerator.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js"></script>
 </head>
 <body>
     <%- include('partials/_header.ejs') %>
@@ -199,6 +201,22 @@
                     </div>
                 `;
 
+                const tribute = new Tribute({
+                    trigger: '{{',
+                    values: function(text, cb) {
+                        const previousQuestions = getPreviousQuestions();
+                        cb(previousQuestions);
+                    },
+                    selectTemplate: function(item) {
+                        return `{{answers.${item.original.key}}}`;
+                    },
+                    menuItemTemplate: function(item) {
+                        return `${item.original.key} - ${item.original.value}`;
+                    }
+                });
+                tribute.attach(document.getElementById('inspector-label'));
+                tribute.attach(document.getElementById('inspector-help-text'));
+
                 document.getElementById('inspector-label').addEventListener('input', (e) => {
                     selectedBlock.querySelector('.form-label').textContent = e.target.value;
                     selectedBlock.querySelector('input[name="blocks[][label]"]').value = e.target.value;
@@ -366,6 +384,23 @@
                 selectedBlock.appendChild(hiddenInput);
             }
             hiddenInput.value = JSON.stringify(displayLogic);
+        }
+
+        function getPreviousQuestions() {
+            const blocks = Array.from(questionsContainer.children);
+            const selectedIndex = blocks.indexOf(selectedBlock);
+            const previousQuestions = [];
+            for (let i = 0; i < selectedIndex; i++) {
+                const block = blocks[i];
+                if (block.classList.contains('question')) {
+                    const id = block.dataset.id;
+                    const label = block.querySelector('.form-label')?.textContent.trim();
+                    if (id && label) {
+                        previousQuestions.push({ key: id, value: label });
+                    }
+                }
+            }
+            return previousQuestions;
         }
 
         function addBlock(html) {
@@ -596,6 +631,8 @@
                     id: blockEl.dataset.id,
                     type: blockEl.dataset.type,
                     text: blockEl.querySelector('.form-label')?.textContent.trim(),
+                    helpText: blockEl.querySelector('.form-text')?.textContent.trim(),
+                    required: blockEl.querySelector('input[name="blocks[][required]"]')?.value === 'true',
                 };
                 if (question.type === 'single-choice' || question.type === 'multiple-choice') {
                     question.options = Array.from(blockEl.querySelectorAll('.options-container .form-check')).map(optionEl =>
