@@ -1,0 +1,19 @@
+<template id="next-rule-template">
+    <div class="next-rule d-flex align-items-center mb-2">
+        <span>IF</span>
+        <select class="form-select mx-2" name="rule-question">
+            <option value="">Select a question...</option>
+        </select>
+        <select class="form-select mx-2" name="rule-operator">
+            <option value="equals">equals</option>
+            <option value="not_equals">not equals</option>
+            <option value="contains">contains</option>
+        </select>
+        <input type="text" class="form-control mx-2" name="rule-value" placeholder="Value">
+        <span>THEN GOTO</span>
+        <select class="form-select mx-2" name="goto-page">
+            <option value="">Select a page...</option>
+        </select>
+        <button type="button" class="btn btn-danger remove-rule-btn">Remove</button>
+    </div>
+</template>

@@ -1,5 +1,6 @@
 const HistoryManager = require('./historyManager');
 const generateUniqueId = require('./idGenerator');
+const validateNavigationGraph = require('./graphValidator');
 
 class PageManager {
     constructor() {
@@ -7,6 +8,7 @@ class PageManager {
         this.pages = [];
         this.selectedPageIndex = -1;
         this.pageContentContainer = document.getElementById('page-content-container');
+        this.pageSettingsPanel = document.getElementById('page-settings-panel');
         this.questionsContainer = document.getElementById('questionsContainer');
         this.pageList = document.getElementById('page-list');
         this.addPageBtn = document.getElementById('add-page-btn');
@@ -166,6 +168,117 @@ class PageManager {
         });
     }
 
+    renderPageSettings() {
+        const pageSettingsContent = document.getElementById('page-settings-content');
+        if (!pageSettingsContent) return;
+        pageSettingsContent.innerHTML = `
+            <h5>'Next' Page Rules</h5>
+            <div id="next-rules-container"></div>
+            <button type="button" id="add-next-rule-btn" class="btn btn-secondary mt-2">Add Rule</button>
+            <hr>
+            <div class="mb-3">
+                <label for="default-next-page" class="form-label">Default Next Page</label>
+                <select id="default-next-page" class="form-select"></select>
+            </div>
+        `;
+
+        document.getElementById('add-next-rule-btn').addEventListener('click', () => this.addNextRule());
+        pageSettingsContent.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-rule-btn')) {
+                this.removeNextRule(e.target.parentElement);
+            }
+        });
+        pageSettingsContent.addEventListener('change', () => this.updateNextRules());
+
+        this.populateNextRules();
+    }
+
+    addNextRule() {
+        const ruleTemplate = document.getElementById('next-rule-template');
+        const newRule = ruleTemplate.content.cloneNode(true);
+        const rulesContainer = document.getElementById('next-rules-container');
+        this.populateRuleQuestions(newRule.querySelector('[name="rule-question"]'));
+        this.populateRulePages(newRule.querySelector('[name="goto-page"]'));
+        rulesContainer.appendChild(newRule);
+    }
+
+    removeNextRule(ruleElement) {
+        ruleElement.remove();
+        this.updateNextRules();
+    }
+
+    populateRuleQuestions(selectElement) {
+        selectElement.innerHTML = '<option value="">Select a question...</option>';
+        const questions = this.pages[this.selectedPageIndex].questions;
+        questions.forEach(q => {
+            const option = document.createElement('option');
+            option.value = q.id;
+            option.textContent = q.questionText;
+            selectElement.appendChild(option);
+        });
+    }
+
+    populateRulePages(selectElement) {
+        selectElement.innerHTML = '<option value="">Select a page...</option>';
+        this.pages.forEach(p => {
+            if (p.id !== this.pages[this.selectedPageIndex].id) {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                selectElement.appendChild(option);
+            }
+        });
+    }
+
+    populateNextRules() {
+        const page = this.pages[this.selectedPageIndex];
+        if (!page.nextRules) return;
+
+        document.getElementById('default-next-page').value = page.nextRules.default || '';
+        const rulesContainer = document.getElementById('next-rules-container');
+        rulesContainer.innerHTML = '';
+        page.nextRules.rules.forEach(ruleData => {
+            const ruleTemplate = document.getElementById('next-rule-template');
+            const newRule = ruleTemplate.content.cloneNode(true);
+            this.populateRuleQuestions(newRule.querySelector('[name="rule-question"]'));
+            this.populateRulePages(newRule.querySelector('[name="goto-page"]'));
+            newRule.querySelector('[name="rule-question"]').value = ruleData.questionId;
+            newRule.querySelector('[name="rule-operator"]').value = ruleData.operator;
+            newRule.querySelector('[name="rule-value"]').value = ruleData.value;
+            newRule.querySelector('[name="goto-page"]').value = ruleData.goto;
+            rulesContainer.appendChild(newRule);
+        });
+    }
+
+    updateNextRules() {
+        const defaultNextPage = document.getElementById('default-next-page').value;
+        const ruleElements = document.querySelectorAll('#next-rules-container .next-rule');
+        const rules = Array.from(ruleElements).map(ruleEl => ({
+            questionId: ruleEl.querySelector('[name="rule-question"]').value,
+            operator: ruleEl.querySelector('[name="rule-operator"]').value,
+            value: ruleEl.querySelector('[name="rule-value"]').value,
+            goto: ruleEl.querySelector('[name="goto-page"]').value,
+        }));
+
+        const newNextRules = {
+            default: defaultNextPage,
+            rules: rules,
+        };
+
+        const tempPages = JSON.parse(JSON.stringify(this.pages));
+        tempPages[this.selectedPageIndex].nextRules = newNextRules;
+
+        const validationResult = validateNavigationGraph(tempPages);
+        if (!validationResult.valid) {
+            alert(`Validation Error: ${validationResult.error}`);
+            return;
+        }
+
+        this.history.addState(JSON.parse(JSON.stringify(this.pages)));
+        this.pages[this.selectedPageIndex].nextRules = newNextRules;
+        this.saveToLocalStorage();
+    }
+
     render() {
         this.pageList.innerHTML = '';
         this.pages.forEach((page, index) => {
@@ -182,9 +295,12 @@ class PageManager {
 
         if (this.selectedPageIndex !== -1) {
             this.pageContentContainer.style.display = 'block';
+            this.pageSettingsPanel.style.display = 'block';
             this.renderQuestions();
+            this.renderPageSettings();
         } else {
             this.pageContentContainer.style.display = 'none';
+            this.pageSettingsPanel.style.display = 'none';
         }
     }
 

@@ -16,10 +16,16 @@
                 </div>
             <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3 bokeh-button">Add Another Question</button>
         </div>
+        <div id="page-settings-panel" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
+            <h4>Page Settings</h4>
+            <div id="page-settings-content"></div>
+        </div>
         <button type="submit" class="btn btn-primary bokeh-button" style="background-color: #007bff;">Submit</button>
     </form>
 </div>
 
 <%- include('partials/_footer.ejs') %>
+<%- include('partials/_nextRuleTemplate.ejs') %>
 <script src="/js/idGenerator.js"></script>
+<script src="/js/graphValidator.js"></script>
 <script src="/js/pageManager.js"></script>
