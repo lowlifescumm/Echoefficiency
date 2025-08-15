@@ -33,10 +33,40 @@ const multipleChoiceQuestionSchema = Joi.object({
     options: Joi.array().items(optionSchema).min(1).required(),
 });
 
+const numberQuestionSchema = Joi.object({
+    id: Joi.string().required(),
+    type: Joi.string().valid('number').required(),
+    label: Joi.string().required(),
+    helpText: Joi.string().allow(''),
+    required: Joi.boolean().required(),
+    min: Joi.number().allow(null),
+    max: Joi.number().allow(null),
+    step: Joi.number().allow(null),
+});
+
+const emailQuestionSchema = Joi.object({
+    id: Joi.string().required(),
+    type: Joi.string().valid('email').required(),
+    label: Joi.string().required(),
+    helpText: Joi.string().allow(''),
+    required: Joi.boolean().required(),
+});
+
+const dateQuestionSchema = Joi.object({
+    id: Joi.string().required(),
+    type: Joi.string().valid('date').required(),
+    label: Joi.string().required(),
+    helpText: Joi.string().allow(''),
+    required: Joi.boolean().required(),
+});
+
 const blockSchema = Joi.alternatives().try(
     shortTextQuestionSchema,
     singleChoiceQuestionSchema,
-    multipleChoiceQuestionSchema
+    multipleChoiceQuestionSchema,
+    numberQuestionSchema,
+    emailQuestionSchema,
+    dateQuestionSchema
 );
 
 module.exports = {

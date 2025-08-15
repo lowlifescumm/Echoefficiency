@@ -6,6 +6,7 @@ describe('PageManager', () => {
     beforeEach(() => {
         document.body.innerHTML = `
             <div id="page-content-container"></div>
+            <div id="page-settings-panel"></div>
             <ul id="page-list"></ul>
             <button id="add-page-btn"></button>
             <button id="rename-page-btn"></button>
