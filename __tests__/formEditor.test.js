@@ -57,4 +57,42 @@ describe('FormEditor', () => {
         expect(block).not.toBeNull();
         expect(block.dataset.type).toBe('date');
     });
+
+    test('should add a matrix (single-select) question block', () => {
+        formEditor.addMatrixSingleQuestionBlock();
+        const block = formEditor.questionsContainer.querySelector('.matrix-single-question');
+        expect(block).not.toBeNull();
+        expect(block.dataset.type).toBe('matrix-single');
+    });
+
+    test('should add a matrix (multi-select) question block', () => {
+        formEditor.addMatrixMultiQuestionBlock();
+        const block = formEditor.questionsContainer.querySelector('.matrix-multi-question');
+        expect(block).not.toBeNull();
+        expect(block.dataset.type).toBe('matrix-multi');
+    });
+
+    test('should add a ranking question block', () => {
+        formEditor.addRankingQuestionBlock();
+        const block = formEditor.questionsContainer.querySelector('.ranking-question');
+        expect(block).not.toBeNull();
+        expect(block.dataset.type).toBe('ranking');
+    });
+
+    test('should serialize a matrix question', () => {
+        formEditor.addMatrixSingleQuestionBlock();
+        const surveyData = formEditor.serializeForm();
+        const question = surveyData.pages[0].blocks[0].questions[0];
+        expect(question.type).toBe('matrix-single');
+        expect(question.rows).toEqual(['Row 1']);
+        expect(question.cols).toEqual(['Column 1']);
+    });
+
+    test('should serialize a ranking question', () => {
+        formEditor.addRankingQuestionBlock();
+        const surveyData = formEditor.serializeForm();
+        const question = surveyData.pages[0].blocks[0].questions[0];
+        expect(question.type).toBe('ranking');
+        expect(question.items).toEqual(['Item 1', 'Item 2']);
+    });
 });

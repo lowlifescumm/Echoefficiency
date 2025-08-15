@@ -289,6 +289,63 @@ class FormEditor {
                     });
                 }
 
+        if (blockType === 'matrix-single' || blockType === 'matrix-multi') {
+            const rowsValue = this.selectedBlock.querySelector('input[name="blocks[][rows]"]').value;
+            const colsValue = this.selectedBlock.querySelector('input[name="blocks[][cols]"]').value;
+            const rows = rowsValue ? JSON.parse(rowsValue) : [];
+            const cols = colsValue ? JSON.parse(colsValue) : [];
+
+            this.generalTabContent.innerHTML += `
+                <hr>
+                <h5>Matrix Properties</h5>
+                <div class="mb-3">
+                    <label for="inspector-rows" class="form-label">Rows (one per line)</label>
+                    <textarea id="inspector-rows" class="form-control" rows="3">${rows.join('\n')}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="inspector-cols" class="form-label">Columns (one per line)</label>
+                    <textarea id="inspector-cols" class="form-control" rows="3">${cols.join('\n')}</textarea>
+                </div>
+            `;
+
+            document.getElementById('inspector-rows').addEventListener('input', (e) => {
+                this.selectedBlock.querySelector('input[name="blocks[][rows]"]').value = JSON.stringify(e.target.value.split('\n'));
+            });
+            document.getElementById('inspector-cols').addEventListener('input', (e) => {
+                this.selectedBlock.querySelector('input[name="blocks[][cols]"]').value = JSON.stringify(e.target.value.split('\n'));
+            });
+        }
+
+        if (blockType === 'ranking') {
+            const itemsValue = this.selectedBlock.querySelector('input[name="blocks[][items]"]').value;
+            const items = itemsValue ? JSON.parse(itemsValue) : [];
+
+            this.generalTabContent.innerHTML += `
+                <hr>
+                <h5>Ranking Items</h5>
+                <div id="inspector-ranking-items">
+                    ${items.map((item, index) => `
+                        <div class="d-flex mb-2 ranking-item">
+                            <span class="drag-handle me-2"></span>
+                            <input type="text" class="form-control" value="${item}" oninput="formEditor.updateRankingItem(this, ${index})">
+                            <button type="button" class="btn btn-danger ms-2" onclick="formEditor.removeRankingItem(this, ${index})">Remove</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" class="btn btn-secondary mt-2" onclick="formEditor.addRankingItem()">Add Item</button>
+            `;
+
+            const rankingItemsContainer = document.getElementById('inspector-ranking-items');
+            new Sortable(rankingItemsContainer, {
+                animation: 150,
+                handle: '.drag-handle',
+                onEnd: (evt) => {
+                    const items = Array.from(rankingItemsContainer.querySelectorAll('.ranking-item input')).map(input => input.value);
+                    this.selectedBlock.querySelector('input[name="blocks[][items]"]').value = JSON.stringify(items);
+                }
+            });
+        }
+
             // Render Logic Tab
             this.logicTabContent.innerHTML = `
                 <div class="mb-3">
@@ -355,6 +412,26 @@ class FormEditor {
         this.renderInspector();
         this.updateBlockWarnings(this.selectedBlock);
         this.renderPreview();
+    }
+
+    updateRankingItem(input, index) {
+        const items = JSON.parse(this.selectedBlock.querySelector('input[name="blocks[][items]"]').value);
+        items[index] = input.value;
+        this.selectedBlock.querySelector('input[name="blocks[][items]"]').value = JSON.stringify(items);
+    }
+
+    removeRankingItem(button, index) {
+        const items = JSON.parse(this.selectedBlock.querySelector('input[name="blocks[][items]"]').value);
+        items.splice(index, 1);
+        this.selectedBlock.querySelector('input[name="blocks[][items]"]').value = JSON.stringify(items);
+        this.renderInspector();
+    }
+
+    addRankingItem() {
+        const items = JSON.parse(this.selectedBlock.querySelector('input[name="blocks[][items]"]').value);
+        items.push('New Item');
+        this.selectedBlock.querySelector('input[name="blocks[][items]"]').value = JSON.stringify(items);
+        this.renderInspector();
     }
 
     addOption(optionData = { text: 'New Option', pinned: false }) {
@@ -683,6 +760,94 @@ class FormEditor {
         this.addBlock(html, blockData);
     }
 
+    addMatrixSingleQuestionBlock() {
+        const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+        const id = generateUniqueId('matrix-single-question', existingIds);
+        const blockData = {
+            id,
+            type: 'matrix-single',
+            label: 'Matrix (Single-select) Question',
+            helpText: 'Help text goes here.',
+            required: false,
+            rows: ['Row 1'],
+            cols: ['Column 1']
+        };
+        const html = `
+            <div class="mb-3 question matrix-single-question block" data-id="${id}" data-type="matrix-single">
+                <input type="hidden" name="blocks[][id]" value="${id}">
+                <input type="hidden" name="blocks[][type]" value="matrix-single">
+                <input type="hidden" name="blocks[][label]" value="${blockData.label}">
+                <input type="hidden" name="blocks[][helpText]" value="${blockData.helpText}">
+                <input type="hidden" name="blocks[][required]" value="${blockData.required}">
+                <input type="hidden" name="blocks[][rows]" value='${JSON.stringify(blockData.rows)}'>
+                <input type="hidden" name="blocks[][cols]" value='${JSON.stringify(blockData.cols)}'>
+                <span class="drag-handle"></span>
+                <label class="form-label">${blockData.label}</label>
+                <small class="form-text text-muted">${blockData.helpText}</small>
+                <button type="button" class="btn btn-danger removeQuestionBtn" onclick="formEditor.removeBlock(this)">Remove</button>
+            </div>
+        `;
+        this.addBlock(html, blockData);
+    }
+
+    addMatrixMultiQuestionBlock() {
+        const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+        const id = generateUniqueId('matrix-multi-question', existingIds);
+        const blockData = {
+            id,
+            type: 'matrix-multi',
+            label: 'Matrix (Multi-select) Question',
+            helpText: 'Help text goes here.',
+            required: false,
+            rows: ['Row 1'],
+            cols: ['Column 1']
+        };
+        const html = `
+            <div class="mb-3 question matrix-multi-question block" data-id="${id}" data-type="matrix-multi">
+                <input type="hidden" name="blocks[][id]" value="${id}">
+                <input type="hidden" name="blocks[][type]" value="matrix-multi">
+                <input type="hidden" name="blocks[][label]" value="${blockData.label}">
+                <input type="hidden" name="blocks[][helpText]" value="${blockData.helpText}">
+                <input type="hidden" name="blocks[][required]" value="${blockData.required}">
+                <input type="hidden" name="blocks[][rows]" value='${JSON.stringify(blockData.rows)}'>
+                <input type="hidden" name="blocks[][cols]" value='${JSON.stringify(blockData.cols)}'>
+                <span class="drag-handle"></span>
+                <label class="form-label">${blockData.label}</label>
+                <small class="form-text text-muted">${blockData.helpText}</small>
+                <button type="button" class="btn btn-danger removeQuestionBtn" onclick="formEditor.removeBlock(this)">Remove</button>
+            </div>
+        `;
+        this.addBlock(html, blockData);
+    }
+
+    addRankingQuestionBlock() {
+        const existingIds = Array.from(document.querySelectorAll('.block')).map(b => b.dataset.id);
+        const id = generateUniqueId('ranking-question', existingIds);
+        const blockData = {
+            id,
+            type: 'ranking',
+            label: 'Ranking Question',
+            helpText: 'Help text goes here.',
+            required: false,
+            items: ['Item 1', 'Item 2']
+        };
+        const html = `
+            <div class="mb-3 question ranking-question block" data-id="${id}" data-type="ranking">
+                <input type="hidden" name="blocks[][id]" value="${id}">
+                <input type="hidden" name="blocks[][type]" value="ranking">
+                <input type="hidden" name="blocks[][label]" value="${blockData.label}">
+                <input type="hidden" name="blocks[][helpText]" value="${blockData.helpText}">
+                <input type="hidden" name="blocks[][required]" value="${blockData.required}">
+                <input type="hidden" name="blocks[][items]" value='${JSON.stringify(blockData.items)}'>
+                <span class="drag-handle"></span>
+                <label class="form-label">${blockData.label}</label>
+                <small class="form-text text-muted">${blockData.helpText}</small>
+                <button type="button" class="btn btn-danger removeQuestionBtn" onclick="formEditor.removeBlock(this)">Remove</button>
+            </div>
+        `;
+        this.addBlock(html, blockData);
+    }
+
     removeBlock(button) {
         this.history.addState(this.questionsContainer.innerHTML);
         const blockToRemove = button.parentElement;
@@ -796,6 +961,16 @@ class FormEditor {
                     text: optionEl.querySelector('label').textContent.trim(),
                     pinned: optionEl.querySelector('input[type="hidden"]')?.dataset.pinned === 'true'
                 }));
+            }
+            if (question.type === 'matrix-single' || question.type === 'matrix-multi') {
+                const rowsValue = blockEl.querySelector('input[name="blocks[][rows]"]').value;
+                const colsValue = blockEl.querySelector('input[name="blocks[][cols]"]').value;
+                question.rows = (rowsValue && rowsValue.startsWith('[')) ? JSON.parse(rowsValue) : [];
+                question.cols = (colsValue && colsValue.startsWith('[')) ? JSON.parse(colsValue) : [];
+            }
+            if (question.type === 'ranking') {
+                const itemsValue = blockEl.querySelector('input[name="blocks[][items]"]').value;
+                question.items = (itemsValue && itemsValue.startsWith('[')) ? JSON.parse(itemsValue) : [];
             }
             return question;
         });
@@ -992,6 +1167,15 @@ class FormEditor {
                 case 'date':
                     addBlockFn = this.addDateQuestionBlock.bind(this);
                     break;
+                case 'matrix-single':
+                    addBlockFn = this.addMatrixSingleQuestionBlock.bind(this);
+                    break;
+                case 'matrix-multi':
+                    addBlockFn = this.addMatrixMultiQuestionBlock.bind(this);
+                    break;
+                case 'ranking':
+                    addBlockFn = this.addRankingQuestionBlock.bind(this);
+                    break;
             }
             if (addBlockFn) {
                 addBlockFn();
@@ -1009,6 +1193,9 @@ class FormEditor {
                         this.addOption(opt);
                     });
                 }
+                if (q.rows) newBlock.querySelector('input[name="blocks[][rows]"]').value = JSON.stringify(q.rows);
+                if (q.cols) newBlock.querySelector('input[name="blocks[][cols]"]').value = JSON.stringify(q.cols);
+                if (q.items) newBlock.querySelector('input[name="blocks[][items]"]').value = JSON.stringify(q.items);
             }
         });
         this.renderPreview();
