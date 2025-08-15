@@ -54,6 +54,7 @@ describe('FormEditor', () => {
             <form id="editForm" action="/update-form/123">
                 <input type="hidden" name="_csrf" value="test-token">
             </form>
+            <div id="aria-live-region" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
         `;
         const form = document.getElementById('editForm');
         const formId = form.action.split('/').pop();

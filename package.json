@@ -65,6 +65,7 @@
     "eslint-plugin-n": "^16.6.2",
     "eslint-plugin-promise": "^6.6.0",
     "jest": "^30.0.5",
+    "jest-axe": "^10.0.0",
     "jest-environment-jsdom": "^30.0.5",
     "jest-mock-axios": "^4.8.0",
     "mongodb-memory-server": "^10.2.0",

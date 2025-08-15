@@ -127,6 +127,7 @@ class FormEditor {
         });
 
         document.addEventListener('keydown', (e) => {
+            document.body.classList.add('using-keyboard');
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z') {
                     e.preventDefault();
@@ -134,6 +135,18 @@ class FormEditor {
                 } else if (e.key === 'y') {
                     e.preventDefault();
                     this.redo();
+                }
+            }
+        });
+
+        this.questionsContainer.addEventListener('keydown', (e) => {
+            if (this.selectedBlock && (e.ctrlKey || e.metaKey)) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.moveBlockUp(this.selectedBlock);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.moveBlockDown(this.selectedBlock);
                 }
             }
         });
@@ -630,6 +643,7 @@ class FormEditor {
         this.updateBlockWarnings(newBlock);
         this.renderPreview();
         this.renderMockAnswersPanel();
+        this.announce(`Block added`);
     }
 
     addShortTextQuestionBlock() {
@@ -1016,6 +1030,7 @@ class FormEditor {
         blockToRemove.remove();
         this.renderPreview();
         this.renderMockAnswersPanel();
+        this.announce(`Block removed`);
     }
 
     renderPreview(mockAnswers = {}) {
@@ -1395,6 +1410,27 @@ class FormEditor {
         if (nextState) {
             this.questionsContainer.innerHTML = nextState;
         }
+    }
+
+    moveBlockUp(block) {
+        const prev = block.previousElementSibling;
+        if (prev) {
+            this.questionsContainer.insertBefore(block, prev);
+            this.announce(`Block moved up`);
+        }
+    }
+
+    moveBlockDown(block) {
+        const next = block.nextElementSibling;
+        if (next) {
+            this.questionsContainer.insertBefore(next, block);
+            this.announce(`Block moved down`);
+        }
+    }
+
+    announce(message) {
+        const liveRegion = document.getElementById('aria-live-region');
+        liveRegion.textContent = message;
     }
 
     applyTheme(theme) {
