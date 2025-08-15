@@ -20,4 +20,12 @@ router.post('/api/surveys/normalize', (req, res) => {
   }
 });
 
+router.post('/api/surveys/:id/diff', (req, res) => {
+    console.log(`Received diff for survey ${req.params.id}`);
+    console.log('Idempotency Key:', req.get('idempotency_key'));
+    console.log('Base Version:', req.body.base_version);
+    console.log('Ops:', req.body.ops);
+    res.status(200).json({ status: 'ok' });
+});
+
 module.exports = router;
