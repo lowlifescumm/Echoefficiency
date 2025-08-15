@@ -14,6 +14,7 @@
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "DISABLE_RATE_LIMITING=true jest --config jest.config.backend.js --testPathIgnorePatterns 'pageManager.test.js' 'historyManager.test.js'",
     "test:frontend": "DISABLE_RATE_LIMITING=true jest --config jest.config.frontend.js 'pageManager.test.js' 'historyManager.test.js' 'formEditor.test.js' 'placeholderResolver.test.js'",
+    "test:e2e": "playwright test",
     "test:ts": "jest __tests__/survey.test.ts",
     "lint": "eslint .",
     "build": "tsc",
@@ -56,6 +57,7 @@
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
+    "@playwright/test": "^1.54.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.1",
     "babel-jest": "^30.0.5",
