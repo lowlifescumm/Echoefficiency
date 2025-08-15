@@ -12,11 +12,13 @@
 </head>
 <body>
     <%- include('partials/_header.ejs') %>
-    <div class="container mt-5">
-        <h1>Edit Feedback Form</h1>
-        <form action="/update-form/<%= form._id %>" method="POST" id="editForm">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <div class="mb-3">
+    <div class="container-fluid mt-5">
+        <div class="row">
+            <div class="col-md-8">
+                <h1>Edit Feedback Form</h1>
+                <form action="/update-form/<%= form._id %>" method="POST" id="editForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <div class="mb-3">
                 <label for="title" class="form-label">Form Title</label>
                 <input type="text" class="form-control" id="title" name="title" value="<%= form.title %>" required>
             </div>
@@ -77,6 +79,12 @@
             <ul id="errorList"></ul>
         </div>
     </div>
+    <div class="col-md-4">
+        <h4>Preview</h4>
+        <div id="preview-pane" style="border: 1px solid #ccc; padding: 10px; min-height: 500px;"></div>
+    </div>
+        </div>
+    </div>
     <%- include('partials/_footer.ejs') %>
     <%- include('partials/_ruleTemplate.ejs') %>
 
@@ -121,6 +129,7 @@
             placeholderClass: 'sortable-placeholder',
             onEnd: () => {
                 history.addState(questionsContainer.innerHTML);
+                renderPreview();
             }
         });
 
@@ -221,10 +230,12 @@
                     selectedBlock.querySelector('.form-label').textContent = e.target.value;
                     selectedBlock.querySelector('input[name="blocks[][label]"]').value = e.target.value;
                     updateBlockWarnings(selectedBlock);
+                    renderPreview();
                 });
                 document.getElementById('inspector-help-text').addEventListener('input', (e) => {
                     selectedBlock.querySelector('.form-text').textContent = e.target.value;
                     selectedBlock.querySelector('input[name="blocks[][helpText]"]').value = e.target.value;
+                    renderPreview();
                 });
                 document.getElementById('inspector-required').addEventListener('change', (e) => {
                     let requiredInput = selectedBlock.querySelector('input[name="blocks[][required]"]');
@@ -235,6 +246,7 @@
                         selectedBlock.appendChild(requiredInput);
                     }
                     requiredInput.value = e.target.checked;
+                    renderPreview();
                 });
 
                 if (blockType === 'single-choice' || blockType === 'multiple-choice') {
@@ -335,6 +347,7 @@
             optionLabel.textContent = input.value;
             const hiddenInput = optionsContainer.children[index].querySelector('input[type="hidden"]');
             hiddenInput.value = input.value;
+            renderPreview();
         }
 
         function removeOption(button, index) {
@@ -342,6 +355,7 @@
             optionsContainer.children[index].remove();
             renderInspector();
             updateBlockWarnings(selectedBlock);
+            renderPreview();
         }
 
         function addOption() {
@@ -361,6 +375,7 @@
             optionsContainer.insertAdjacentHTML('beforeend', newOptionHTML);
             renderInspector();
             updateBlockWarnings(selectedBlock);
+            renderPreview();
         }
 
         function addRule() {
@@ -439,6 +454,7 @@
             questionsContainer.insertAdjacentHTML('beforeend', html);
             const newBlock = questionsContainer.lastElementChild;
             updateBlockWarnings(newBlock);
+            renderPreview();
         }
 
         function addShortTextQuestionBlock() {
@@ -556,6 +572,7 @@
                 selectedBlock = null;
             }
             blockToRemove.remove();
+            renderPreview();
         }
 
         inspector.addEventListener('focusin', (e) => {
@@ -709,6 +726,51 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
+
+        function renderPreview() {
+            const previewPane = document.getElementById('preview-pane');
+            previewPane.innerHTML = '';
+            const blocks = Array.from(questionsContainer.children);
+            blocks.forEach(blockEl => {
+                const blockType = blockEl.dataset.type;
+                let blockHTML = '';
+
+                if (blockType === 'text-block') {
+                    const content = blockEl.querySelector('textarea').value;
+                    blockHTML = `<p>${content}</p>`;
+                } else if (blockType === 'divider') {
+                    blockHTML = '<hr>';
+                } else if (blockType === 'text' || blockType === 'multipleChoice' || blockType === 'checkbox') {
+                    const label = blockEl.querySelector('.form-label').textContent;
+                    const helpText = blockEl.querySelector('.form-text').textContent;
+                    const optionsContainer = blockEl.querySelector('.options-container');
+
+                    blockHTML = `<div class="mb-3"><h5>${label}</h5><small class="text-muted">${helpText}</small>`;
+                    if (optionsContainer) {
+                        blockHTML += '<div class="mt-2">';
+                        const options = Array.from(optionsContainer.children);
+                        options.forEach(optionEl => {
+                            const optionLabel = optionEl.querySelector('label').textContent.trim();
+                            const optionType = blockType === 'multipleChoice' ? 'radio' : 'checkbox';
+                            blockHTML += `
+                                <div class="form-check">
+                                    <input class="form-check-input" type="${optionType}" disabled>
+                                    <label class="form-check-label">${optionLabel}</label>
+                                </div>
+                            `;
+                        });
+                        blockHTML += '</div>';
+                    } else {
+                         blockHTML += `<input type="text" class="form-control" disabled>`
+                    }
+                    blockHTML += `</div>`
+                }
+
+                if(blockHTML) {
+                    previewPane.insertAdjacentHTML('beforeend', blockHTML);
+                }
+            });
+        }
 
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.metaKey) {
