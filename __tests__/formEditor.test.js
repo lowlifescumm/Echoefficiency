@@ -1,3 +1,16 @@
+global.bootstrap = {
+    Modal: class {
+        constructor(el) {
+            this.el = el;
+        }
+        show() {
+            this.el.classList.add('show');
+        }
+        hide() {
+            this.el.classList.remove('show');
+        }
+    }
+};
 const FormEditor = require('../public/js/formEditor');
 
 describe('FormEditor', () => {
@@ -34,6 +47,10 @@ describe('FormEditor', () => {
             </div>
             <button id="translateBtn"></button>
             <button id="exportCsvBtn"></button>
+            <div id="command-palette">
+                <input id="command-palette-input">
+                <ul id="command-palette-results"></ul>
+            </div>
             <form id="editForm" action="/update-form/123">
                 <input type="hidden" name="_csrf" value="test-token">
             </form>

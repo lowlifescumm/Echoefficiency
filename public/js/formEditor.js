@@ -8,6 +8,7 @@ const evaluatePredicate = require('./predicateEvaluator');
 const resolvePlaceholders = require('./placeholderResolver');
 const ThemeManager = require('./themeManager');
 const { validateSurvey } = require('./compositeValidator');
+const CommandPalette = require('./commandPalette');
 
 class FormEditor {
     constructor(formId, csrfToken) {
@@ -22,8 +23,32 @@ class FormEditor {
         this.snapshotManager = new SnapshotManager();
         this.autosaveManager = new AutosaveManager(formId, new Date().toISOString());
         this.themeManager = new ThemeManager();
+        this.initCommands();
+        this.commandPalette = new CommandPalette(this.commands);
 
         this.init();
+    }
+
+    initCommands() {
+        this.commands = [
+            { name: 'Add Page', action: () => alert('Add Page clicked') },
+            { name: 'Go to Page', action: () => alert('Go to Page clicked') },
+            { name: 'Add Short Text Question', action: () => this.addShortTextQuestionBlock() },
+            { name: 'Add Single Choice Question', action: () => this.addSingleChoiceQuestionBlock() },
+            { name: 'Add Multiple Choice Question', action: () => this.addMultipleChoiceQuestionBlock() },
+            { name: 'Add Number Question', action: () => this.addNumberQuestionBlock() },
+            { name: 'Add Email Question', action: () => this.addEmailQuestionBlock() },
+            { name: 'Add Date Question', action: () => this.addDateQuestionBlock() },
+            { name: 'Add Matrix (Single-select) Question', action: () => this.addMatrixSingleQuestionBlock() },
+            { name: 'Add Matrix (Multi-select) Question', action: () => this.addMatrixMultiQuestionBlock() },
+            { name: 'Add Ranking Question', action: () => this.addRankingQuestionBlock() },
+            { name: 'Add File Upload Question', action: () => this.addFileUploadQuestionBlock() },
+            { name: 'Add Consent Checkbox', action: () => this.addConsentCheckboxBlock() },
+            { name: 'Add Text Block', action: () => this.addTextBlock() },
+            { name: 'Add Divider', action: () => this.addDividerBlock() },
+            { name: 'Validate', action: () => this.validateForm() },
+            { name: 'Publish', action: () => this.publishForm() },
+        ];
     }
 
     init() {

@@ -141,3 +141,7 @@ body {
 .bokeh-button:hover::after {
   opacity: 1;
 }
+
+#command-palette .modal-dialog {
+    max-width: 600px;
+}
