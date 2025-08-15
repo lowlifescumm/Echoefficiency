@@ -13,46 +13,32 @@ const WebhookDelivery = require('../models/WebhookDelivery');
 const User = require('../models/User');
 
 
-router.post('/create-form', isAuthenticated, hasPermission('create_form'), async (req, res) => {
-  try {
-    const { title, questions } = req.body
-    const ownerId = req.session.userId
+const { CreateSurveySchema } = require('../dist/validation/survey');
 
-    if (!title || !questions || questions.length === 0) {
-      console.log('Validation failed: Title and questions are required.')
-      return res.status(400).json({ message: 'Validation failed: Title and questions are required.' })
+router.post('/surveys', isAuthenticated, hasPermission('create_form'), async (req, res) => {
+    const parsed = CreateSurveySchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).render('createForm', { errors: parsed.error.flatten().fieldErrors, csrfToken: req.csrfToken() });
     }
 
-    const isValidQuestions = questions.every(question => question.questionText && question.questionType)
-    if (!isValidQuestions) {
-      console.log('Validation failed: Each question must include both questionText and questionType.')
-      return res.status(400).json({ message: 'Validation failed: Each question must include both questionText and questionType.' })
+    try {
+        const survey = await FeedbackForm.create({
+            title: parsed.data.title.trim(),
+            organization: req.session.currentOrganizationId,
+            ownerId: req.session.userId,
+            status: 'draft',
+            questions: [{ questionText: 'Page 1', questionType: 'page_break' }]
+        });
+
+        res.redirect(`/edit-form/${survey._id}`);
+    } catch (error) {
+        console.error('Failed to create survey:', error);
+        res.status(500).render('createForm', { errors: { _form: ['Failed to create survey.'] }, csrfToken: req.csrfToken() });
     }
-
-    const newForm = new FeedbackForm({
-      ownerId,
-      organization: req.session.currentOrganizationId,
-      title,
-      questions,
-      creationDate: new Date()
-    })
-
-    const formLink = `${req.protocol}://${req.get('host')}/form/${newForm._id.toString()}`
-    newForm.link = formLink
-
-    await newForm.save()
-
-    console.log('Feedback form created successfully:', newForm)
-    res.redirect('/success')
-  } catch (error) {
-    console.error('Failed to create feedback form:', error)
-    console.error(error.stack)
-    res.status(500).json({ message: 'Failed to create feedback form', error: error.message })
-  }
-})
+});
 
 router.get('/create-form', isAuthenticated, hasPermission('create_form'), (req, res) => {
-  res.render('createForm', { csrfToken: res.locals.csrfToken })
+  res.render('createForm', { csrfToken: req.csrfToken(), errors: {} });
 })
 
 router.get('/success', isAuthenticated, (req, res) => {
