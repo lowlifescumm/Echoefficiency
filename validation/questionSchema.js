@@ -2,6 +2,7 @@ const Joi = require('joi');
 
 const optionSchema = Joi.object({
     text: Joi.string().required(),
+    pinned: Joi.boolean().required(),
 });
 
 const shortTextQuestionSchema = Joi.object({
@@ -18,6 +19,7 @@ const singleChoiceQuestionSchema = Joi.object({
     label: Joi.string().required(),
     helpText: Joi.string().allow(''),
     required: Joi.boolean().required(),
+    shuffle: Joi.boolean().required(),
     options: Joi.array().items(optionSchema).min(1).required(),
 });
 
@@ -27,6 +29,7 @@ const multipleChoiceQuestionSchema = Joi.object({
     label: Joi.string().required(),
     helpText: Joi.string().allow(''),
     required: Joi.boolean().required(),
+    shuffle: Joi.boolean().required(),
     options: Joi.array().items(optionSchema).min(1).required(),
 });
 

@@ -239,21 +239,42 @@
 
                 if (blockType === 'single-choice' || blockType === 'multiple-choice') {
                     const optionsContainer = selectedBlock.querySelector('.options-container');
-                    const optionsHTML = Array.from(optionsContainer.children).map((option, index) => `
-                        <div class="d-flex mb-2">
-                            <input type="text" class="form-control" value="${option.querySelector('label').textContent.trim()}" oninput="updateOption(this, ${index})">
-                            <button type="button" class="btn btn-danger ms-2" onclick="removeOption(this, ${index})">Remove</button>
-                        </div>
-                    `).join('');
+                    const isShuffle = selectedBlock.querySelector('input[name="blocks[][shuffle]"]')?.value === 'true' || false;
+                    const optionsHTML = Array.from(optionsContainer.children).map((option, index) => {
+                        const optionText = option.querySelector('label').textContent.trim();
+                        const isPinned = option.querySelector('input[type="hidden"]')?.dataset.pinned === 'true' || false;
+                        return `
+                            <div class="d-flex mb-2">
+                                <button type="button" class="btn btn-light me-2" onclick="togglePin(this, ${index})">${isPinned ? '📌' : '📍'}</button>
+                                <input type="text" class="form-control" value="${optionText}" oninput="updateOption(this, ${index})">
+                                <button type="button" class="btn btn-danger ms-2" onclick="removeOption(this, ${index})">Remove</button>
+                            </div>
+                        `;
+                    }).join('');
 
-                    inspectorContent.innerHTML += `
+                    generalTabContent.innerHTML += `
                         <hr>
                         <h5>Options</h5>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="inspector-shuffle" ${isShuffle ? 'checked' : ''}>
+                            <label class="form-check-label" for="inspector-shuffle">Shuffle choices</label>
+                        </div>
                         <div id="inspector-options">
                             ${optionsHTML}
                         </div>
                         <button type="button" class="btn btn-secondary mt-2" onclick="addOption()">Add Option</button>
                     `;
+
+                    document.getElementById('inspector-shuffle').addEventListener('change', (e) => {
+                        let shuffleInput = selectedBlock.querySelector('input[name="blocks[][shuffle]"]');
+                        if (!shuffleInput) {
+                            shuffleInput = document.createElement('input');
+                            shuffleInput.type = 'hidden';
+                            shuffleInput.name = 'blocks[][shuffle]';
+                            selectedBlock.appendChild(shuffleInput);
+                        }
+                        shuffleInput.value = e.target.checked;
+                    });
                 }
 
                 // Render Logic Tab
@@ -296,6 +317,16 @@
                     });
                 }
             }
+        }
+
+        function togglePin(button, index) {
+            const optionsContainer = selectedBlock.querySelector('.options-container');
+            const optionEl = optionsContainer.children[index];
+            const hiddenInput = optionEl.querySelector('input[name$="[pinned]"]');
+            const isPinned = hiddenInput.value === 'true';
+            hiddenInput.value = !isPinned;
+            hiddenInput.dataset.pinned = !isPinned;
+            button.textContent = !isPinned ? '📌' : '📍';
         }
 
         function updateOption(input, index) {
@@ -438,11 +469,13 @@
                     <input type="hidden" name="blocks[][type]" value="single-choice">
                     <input type="hidden" name="blocks[][label]" value="Single Choice Question">
                     <input type="hidden" name="blocks[][helpText]" value="Help text goes here.">
+                    <input type="hidden" name="blocks[][shuffle]" value="false">
                     <span class="drag-handle"></span>
                     <label class="form-label">Single Choice Question</label>
                     <div class="options-container">
                         <div class="form-check">
                             <input type="hidden" name="blocks[][options][0][text]" value="Option 1">
+                            <input type="hidden" name="blocks[][options][0][pinned]" value="false" data-pinned="false">
                             <input class="form-check-input" type="radio" name="radio-${id}" id="radio-${id}-1">
                             <label class="form-check-label" for="radio-${id}-1">
                                 Option 1
@@ -465,11 +498,13 @@
                     <input type="hidden" name="blocks[][type]" value="multiple-choice">
                     <input type="hidden" name="blocks[][label]" value="Multiple Choice Question">
                     <input type="hidden" name="blocks[][helpText]" value="Help text goes here.">
+                    <input type="hidden" name="blocks[][shuffle]" value="false">
                     <span class="drag-handle"></span>
                     <label class="form-label">Multiple Choice Question</label>
                     <div class="options-container">
                         <div class="form-check">
                             <input type="hidden" name="blocks[][options][0][text]" value="Option 1">
+                            <input type="hidden" name="blocks[][options][0][pinned]" value="false" data-pinned="false">
                             <input class="form-check-input" type="checkbox" id="checkbox-${id}-1">
                             <label class="form-check-label" for="checkbox-${id}-1">
                                 Option 1
@@ -635,9 +670,11 @@
                     required: blockEl.querySelector('input[name="blocks[][required]"]')?.value === 'true',
                 };
                 if (question.type === 'single-choice' || question.type === 'multiple-choice') {
-                    question.options = Array.from(blockEl.querySelectorAll('.options-container .form-check')).map(optionEl =>
-                        optionEl.querySelector('label').textContent.trim()
-                    );
+                    question.shuffle = blockEl.querySelector('input[name="blocks[][shuffle]"]')?.value === 'true';
+                    question.options = Array.from(blockEl.querySelectorAll('.options-container .form-check')).map(optionEl => ({
+                        text: optionEl.querySelector('label').textContent.trim(),
+                        pinned: optionEl.querySelector('input[type="hidden"]')?.dataset.pinned === 'true'
+                    }));
                 }
                 return question;
             });
