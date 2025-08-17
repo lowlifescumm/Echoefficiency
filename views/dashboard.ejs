@@ -12,6 +12,7 @@
 <body>
     <%- include('partials/_header.ejs') %>
     <div class="container mt-5">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <h1>Welcome to Your Dashboard</h1>
         <p>Here you can manage your feedback forms.</p>
         <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#createFormModal">

@@ -65,8 +65,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({ title })
                 });
 
+                const createFormModalEl = document.getElementById('createFormModal');
+                const createFormModal = bootstrap.Modal.getInstance(createFormModalEl);
                 if (response.ok) {
                     const data = await response.json();
+                    if (createFormModal) {
+                        createFormModal.hide();
+                    }
                     window.location.href = `/edit-form/${data.formId}`;
                 } else {
                     const errorData = await response.json();
