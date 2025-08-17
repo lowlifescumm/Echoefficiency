@@ -14,9 +14,7 @@
     <div class="container mt-5">
         <h1>Welcome to Your Dashboard</h1>
         <p>Here you can manage your feedback forms.</p>
-        <% if (userRole === 'Editor' || userRole === 'Admin' || userRole === 'Owner') { %>
-        <a href="/create-form" class="btn btn-primary mb-3">Create Survey</a>
-        <% } %>
+        <a href="/create-form" class="btn btn-primary mb-3">Create New Form</a>
         <% if (forms.length > 0) { %>
             <div class="list-group">
                 <% forms.forEach(form => { %>
@@ -40,13 +38,7 @@
                 <% }); %>
             </div>
         <% } else { %>
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">No surveys yet</h5>
-                    <p class="card-text">Get started by creating your first survey.</p>
-                    <a href="/create-form" class="btn btn-primary">Create Survey</a>
-                </div>
-            </div>
+            <p>You have not created any feedback forms yet.</p>
         <% } %>
     </div>
 

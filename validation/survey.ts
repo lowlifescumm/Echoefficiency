@@ -33,10 +33,6 @@ const surveySchema = z.object({
   pages: z.array(pageSchema),
 });
 
-export const CreateSurveySchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-});
-
 export const validateSurvey = (survey: unknown): { success: true; data: Survey } | { success: false; errors: z.ZodError } => {
   const result = surveySchema.safeParse(survey);
   if (result.success) {
