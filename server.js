@@ -1,4 +1,5 @@
-require('dotenv').config()
+const dotenvPath = process.env.DOTENV_PATH || '.env';
+require('dotenv').config({ path: dotenvPath });
 const mongoose = require('mongoose')
 const app = require('./app')
 const { initScheduler } = require('./services/jobScheduler');

@@ -11,7 +11,6 @@
     <script src="/js/placeholderResolver.js"></script>
     <script src="/js/snapshotManager.js"></script>
     <script src="/js/snapshotComparer.js"></script>
-    <script src="/js/autosaveManager.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js"></script>
 </head>
@@ -218,6 +217,17 @@
     </div>
 
     <div id="aria-live-region" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+    <script src="/js/autosaveManager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('editForm');
+            if (form) {
+                const formId = form.action.split('/').pop();
+                const csrfToken = form.querySelector('input[name="_csrf"]').value;
+                new AutosaveManager(formId, csrfToken);
+            }
+        });
+    </script>
     <script src="/js/formEditor.js"></script>
     <script src="/js/commandPalette.js"></script>
 </body>

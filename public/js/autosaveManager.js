@@ -1,53 +1,56 @@
 class AutosaveManager {
-    constructor(surveyId, baseVersion) {
-        this.surveyId = surveyId;
-        this.baseVersion = baseVersion;
-        this.ops = [];
-        this.timer = null;
-        this.start();
+    constructor(formId, csrfToken) {
+        this.formId = formId;
+        this.csrfToken = csrfToken;
+        this.saveTimeout = null;
+
+        this.init();
     }
 
-    addOp(op) {
-        this.ops.push(op);
-    }
-
-    start() {
-        this.timer = setInterval(() => this.sendOps(), 5000);
-    }
-
-    stop() {
-        clearInterval(this.timer);
-    }
-
-    async sendOps() {
-        if (this.ops.length === 0) {
-            return;
+    init() {
+        const form = document.getElementById('editForm');
+        if (form) {
+            form.addEventListener('input', () => this.scheduleSave());
+            // Also listen for custom events that might be triggered by the form editor
+            document.addEventListener('form-changed', () => this.scheduleSave());
         }
+    }
 
-        const opsToSend = [...this.ops];
-        const idempotencyKey = crypto.randomUUID();
+    scheduleSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        this.saveTimeout = setTimeout(() => this.save(), 2000);
+    }
+
+    serializeForm() {
+        if (window.formEditor) {
+            return window.formEditor.serializeForm();
+        }
+        return null;
+    }
+
+    async save() {
+        const data = this.serializeForm();
 
         try {
-            const response = await fetch(`/api/surveys/${this.surveyId}/diff`, {
+            const response = await fetch(`/autosave-form/${this.formId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'idempotency_key': idempotencyKey,
+                    'CSRF-Token': this.csrfToken
                 },
-                body: JSON.stringify({
-                    base_version: this.baseVersion,
-                    ops: opsToSend,
-                }),
+                body: JSON.stringify(data)
             });
 
             if (response.ok) {
-                this.ops = this.ops.slice(opsToSend.length);
-                this.baseVersion = new Date().toISOString();
+                console.log('Form autosaved successfully.');
+                // Maybe show a small notification to the user.
+            } else {
+                console.error('Failed to autosave form.');
             }
         } catch (error) {
-            console.error('Error sending diffs:', error);
+            console.error('Error during autosave:', error);
         }
     }
 }
-
-module.exports = AutosaveManager;

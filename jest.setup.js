@@ -1,6 +1,20 @@
 const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+global.bootstrap = {
+  Modal: class {
+    constructor(element) {
+      this.element = element;
+    }
+    show() {
+      // mock implementation
+    }
+    hide() {
+      // mock implementation
+    }
+  }
+};
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const { RedisMemoryServer } = require('redis-memory-server');
 const mongoose = require('mongoose');

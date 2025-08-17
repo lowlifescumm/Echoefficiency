@@ -1,7 +1,15 @@
 const { test, expect } = require('@playwright/test');
 
 test('should create a 3-page survey, add logic, validate, publish, and download JSON', async ({ page }) => {
-  await page.goto('http://localhost:3000');
+  // Login first
+  await page.goto('/auth/login');
+  await page.fill('input[name="email"]', 'e2e-user@example.com');
+  await page.fill('input[name="password"]', 'password123');
+  await page.click('button:text("Login")');
+  await page.waitForNavigation();
+
+  // Now we should be on the dashboard
+  await page.goto('/dashboard');
 
   // Create a new form
   await page.click('text=Create New Form');

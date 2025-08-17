@@ -1,7 +1,6 @@
 const Sortable = require('sortablejs');
 const HistoryManager = require('./historyManager');
 const SnapshotManager = require('./snapshotManager');
-const AutosaveManager = require('./autosaveManager');
 const generateUniqueId = require('./idGenerator');
 const compareSnapshots = require('./snapshotComparer');
 const evaluatePredicate = require('./predicateEvaluator');
@@ -21,7 +20,6 @@ class FormEditor {
         this.selectedBlock = null;
         this.history = new HistoryManager();
         this.snapshotManager = new SnapshotManager();
-        this.autosaveManager = new AutosaveManager(formId, new Date().toISOString());
         this.themeManager = new ThemeManager();
         this.initCommands();
         this.commandPalette = new CommandPalette(this.commands);
@@ -66,9 +64,6 @@ class FormEditor {
             placeholderClass: 'sortable-placeholder',
             onEnd: (evt) => {
                 this.history.addState(this.questionsContainer.innerHTML);
-                const blockId = evt.item.dataset.id;
-                const newIndex = evt.newIndex;
-                this.autosaveManager.addOp({ op: 'move', blockId, newIndex });
                 this.renderPreview();
                 this.renderMockAnswersPanel();
             }
@@ -637,7 +632,6 @@ class FormEditor {
 
     addBlock(html, blockData) {
         this.history.addState(this.questionsContainer.innerHTML);
-        this.autosaveManager.addOp({ op: 'add', block: blockData });
         this.questionsContainer.insertAdjacentHTML('beforeend', html);
         const newBlock = this.questionsContainer.lastElementChild;
         this.updateBlockWarnings(newBlock);
@@ -1022,7 +1016,6 @@ class FormEditor {
     removeBlock(button) {
         this.history.addState(this.questionsContainer.innerHTML);
         const blockToRemove = button.parentElement;
-        this.autosaveManager.addOp({ op: 'remove', blockId: blockToRemove.dataset.id });
         if (blockToRemove === this.selectedBlock) {
             this.inspector.style.display = 'none';
             this.selectedBlock = null;

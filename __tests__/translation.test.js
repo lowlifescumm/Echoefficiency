@@ -48,6 +48,20 @@ describe('Translation', () => {
             </div>
             <button id="translateBtn"></button>
             <button id="exportCsvBtn"></button>
+            <div id="aria-live-region"></div>
+            <div id="command-palette" class="modal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <input type="text" id="command-palette-input" class="form-control" placeholder="Type a command...">
+                        </div>
+                        <div class="modal-body">
+                            <ul id="command-palette-results" class="list-group">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
         const form = document.getElementById('editForm');
         const formId = form.action.split('/').pop();
@@ -64,13 +78,15 @@ describe('Translation', () => {
 
     test('should export strings as CSV', () => {
         formEditor.addShortTextQuestionBlock();
-        const link = {
-            click: jest.fn(),
-            setAttribute: jest.fn(),
-            removeAttribute: jest.fn()
-        };
+        const link = document.createElement('a');
+        jest.spyOn(link, 'click');
+        jest.spyOn(link, 'setAttribute');
         jest.spyOn(document, 'createElement').mockReturnValue(link);
+        jest.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+        jest.spyOn(document.body, 'removeChild').mockImplementation(() => {});
+
         formEditor.exportStringsAsCsv();
+
         expect(document.createElement).toHaveBeenCalledWith('a');
         expect(link.setAttribute).toHaveBeenCalledWith('href', expect.stringContaining('data:text/csv;charset=utf-8,'));
         expect(link.setAttribute).toHaveBeenCalledWith('download', 'translations.csv');

@@ -13,6 +13,32 @@ const WebhookDelivery = require('../models/WebhookDelivery');
 const User = require('../models/User');
 
 
+router.post('/create-form-draft', isAuthenticated, hasPermission('create_form'), async (req, res) => {
+  try {
+    const { title } = req.body;
+    const ownerId = req.session.userId;
+
+    if (!title) {
+      return res.status(400).json({ message: 'Title is required.' });
+    }
+
+    const newForm = new FeedbackForm({
+      ownerId,
+      organization: req.session.currentOrganizationId,
+      title,
+      questions: [], // Start with an empty array of questions
+      creationDate: new Date(),
+    });
+
+    await newForm.save();
+
+    res.status(201).json({ formId: newForm._id });
+  } catch (error) {
+    console.error('Failed to create form draft:', error);
+    res.status(500).json({ message: 'Failed to create form draft', error: error.message });
+  }
+});
+
 router.post('/create-form', isAuthenticated, hasPermission('create_form'), async (req, res) => {
   try {
     const { title, questions } = req.body
@@ -110,6 +136,17 @@ router.post('/update-form/:formId', isAuthenticated, hasPermission('edit_form'),
     res.status(500).send('Error updating feedback form')
   }
 })
+
+router.post('/autosave-form/:formId', isAuthenticated, hasPermission('edit_form'), async (req, res) => {
+  try {
+    const { title, questions } = req.body;
+    await FeedbackForm.findByIdAndUpdate(req.params.formId, { title, questions });
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('Error autosaving form:', error);
+    res.status(500).send('Error autosaving form');
+  }
+});
 
 router.post('/delete-form/:formId', isAuthenticated, hasPermission('delete_form'), async (req, res) => {
   try {

@@ -43,6 +43,41 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.error('jQuery is not loaded. Modal script will not work.');
     }
+
+    const createFormDraftBtn = document.getElementById('createFormDraftBtn');
+    if (createFormDraftBtn) {
+        createFormDraftBtn.addEventListener('click', async () => {
+            const title = document.getElementById('formTitle').value;
+            const csrfToken = document.querySelector('input[name="_csrf"]').value;
+
+            if (!title) {
+                alert('Please enter a title for the form.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/create-form-draft', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ title })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = `/edit-form/${data.formId}`;
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error: ${errorData.message}`);
+                }
+            } catch (error) {
+                console.error('Failed to create form draft:', error);
+                alert('An error occurred while creating the form draft.');
+            }
+        });
+    }
 });
 
 // Make the copy function globally available if it's not already

@@ -107,7 +107,7 @@ app.use(flash())
 app.use(cookieParser())
 
 // CSRF protection middleware
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'e2e_test') {
   app.use(csrf({ cookie: true }))
 }
 
